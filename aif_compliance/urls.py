@@ -27,15 +27,8 @@ urlpatterns = [
     # --- Portal ---
     path("portal/", TemplateView.as_view(template_name="portal/dashboard.html"), name="portal-home"),
         path("portal/funds/", include("aif_compliance.funds.urls")),            # ✅ Portal views only
-    path("portal/manager_entities/", include("manager_entities.urls")),
-    path("portal/investors/", TemplateView.as_view(template_name="portal/investors.html"), name="portal-investors"),
-    path("portal/investors/onboard/", TemplateView.as_view(template_name="portal/investor_onboard.html"), name="portal-investor-onboard"),
-    path("portal/investors/<int:pk>/", TemplateView.as_view(template_name="portal/investor_detail.html"), name="portal-investor-detail"),
-    path("portal/companies/", TemplateView.as_view(template_name="portal/companies.html"), name="portal-companies"),
-    path("portal/companies/add/", TemplateView.as_view(template_name="portal/company_add.html"), name="portal-company-add"),
-    path("portal/companies/<int:pk>/", TemplateView.as_view(template_name="portal/company_detail.html"), name="portal-company-detail"),
-    path("portal/transactions/", TemplateView.as_view(template_name="portal/transactions.html"), name="portal-transactions"),
-    path("portal/compliance/", TemplateView.as_view(template_name="portal/compliance.html"), name="portal-compliance"),
+    path("portal/manager_entities/", include("aif_compliance.manager_entities.urls")),
+    # The rest of the portal routes are TemplateViews and do not use include(), so no change needed
 
     # Root → Login
     path("", lambda request: redirect("login", permanent=False)),
