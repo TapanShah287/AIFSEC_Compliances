@@ -30,15 +30,17 @@ jobs:
           pip install -r requirements.txt
           pip install coverage
 
-      - name: Add project root to PYTHONPATH
+      - name: Add Django project to PYTHONPATH
         run: |
-          echo "PYTHONPATH=$GITHUB_WORKSPACE" >> $GITHUB_ENV
+          echo "PYTHONPATH=$GITHUB_WORKSPACE/aif_compliance" >> $GITHUB_ENV
 
       - name: Run migrations
         run: |
+          cd aif_compliance
           python manage.py migrate --noinput
 
       - name: Run tests with coverage
         run: |
+          cd aif_compliance
           coverage run manage.py test
           coverage report -m
