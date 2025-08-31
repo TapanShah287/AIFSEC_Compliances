@@ -41,5 +41,6 @@ jobs:
 
       - name: Run tests with pytest + coverage
         run: |
+          export PYTHONPATH=$PWD
           coverage run -m pytest
           coverage report -m
