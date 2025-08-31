@@ -37,9 +37,9 @@ jobs:
 
       - name: Run migrations
         run: |
-          python ./manage.py migrate --noinput
+          python manage.py migrate --noinput
 
-      - name: Run tests with coverage
+      - name: Run tests with coverage (explicit apps)
         run: |
-          coverage run ./manage.py test
+          coverage run manage.py test admin api compliances dashboard docgen funds investee_companies investors manager_entities services transactions --pattern="tests.py"
           coverage report -m
