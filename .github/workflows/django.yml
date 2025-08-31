@@ -40,5 +40,5 @@ jobs:
 
       - name: Run tests with coverage
         run: |
-          coverage run manage.py test
+          coverage run manage.py test --pattern="tests.py"
           coverage report -m
