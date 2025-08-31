@@ -20,7 +20,7 @@ ALLOWED_HOSTS = os.getenv('DJANGO_ALLOWED_HOSTS', '').split(',') if not DEBUG el
 INSTALLED_APPS = [
     'taggit',
     'rest_framework',
-    'transactions',
+    'aif_compliance.transactions',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -28,13 +28,13 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'django.contrib.humanize',
-    'investors', 
-    'manager_entities',
-    'investee_companies',
-    'funds',
-    'compliances',
-    'docgen',
-    'dashboard',
+    'aif_compliance.investors',
+    'aif_compliance.manager_entities',
+    'aif_compliance.investee_companies',
+    'aif_compliance.funds',
+    'aif_compliance.compliances',
+    'aif_compliance.docgen',
+    'aif_compliance.dashboard',
 ]
 
 LOGIN_URL = "/accounts/login/"
