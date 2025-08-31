@@ -26,7 +26,8 @@ jobs:
 
       - name: Set up environment
         run: |
-          cp .env.example .env
+          cp aif_compliance/.env.example .env
+
 
       - name: Run migrations
         run: |
