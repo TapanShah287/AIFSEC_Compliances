@@ -9,6 +9,11 @@ on:
 jobs:
   test:
     runs-on: ubuntu-latest
+    env:
+      DJANGO_SETTINGS_MODULE: aif_compliance.settings
+      SECRET_KEY: test-secret-key
+      DEBUG: True
+      DATABASE_URL: sqlite:///db.sqlite3
 
     steps:
       - name: Checkout code
@@ -24,16 +29,9 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt
 
-      - name: Set up environment
-        run: |
-          echo "SECRET_KEY=test-secret-key" > .env
-          echo "DEBUG=True" >> .env
-          echo "DATABASE_URL=sqlite:///db.sqlite3" >> .env
-
-
       - name: Run migrations
         run: |
-          python manage.py migrate
+          python manage.py migrate --noinput
 
       - name: Run tests
         run: |
