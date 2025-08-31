@@ -30,11 +30,15 @@ jobs:
           pip install -r requirements.txt
           pip install coverage
 
+      - name: Add project root to PYTHONPATH
+        run: |
+          echo "PYTHONPATH=$GITHUB_WORKSPACE" >> $GITHUB_ENV
+
       - name: Run migrations
         run: |
           python manage.py migrate --noinput
 
       - name: Run tests with coverage
         run: |
-          coverage run manage.py test admin api compliances dashboard docgen funds investee_companies investors manager_entities services transactions
+          coverage run manage.py test
           coverage report -m
