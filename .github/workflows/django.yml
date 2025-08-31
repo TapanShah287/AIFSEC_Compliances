@@ -36,11 +36,9 @@ jobs:
 
       - name: Run migrations
         run: |
-          cd aif_compliance
           python manage.py migrate --noinput
 
       - name: Run tests with coverage
         run: |
-          cd aif_compliance
           coverage run manage.py test
           coverage report -m
