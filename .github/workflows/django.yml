@@ -34,11 +34,16 @@ jobs:
         run: |
           echo "PYTHONPATH=$GITHUB_WORKSPACE" >> $GITHUB_ENV
 
+      - name: Show repo structure
+        run: |
+          pwd
+          ls -R
+          
       - name: Run migrations
         run: |
           python manage.py migrate --noinput
 
       - name: Run tests with coverage
         run: |
-          coverage run manage.py test
+          coverage run ./manage.py test
           coverage report -m
