@@ -33,7 +33,6 @@ INSTALLED_APPS = [
     'aif_compliance.investee_companies',
     'aif_compliance.funds',
     'aif_compliance.compliances',
-    'aif_compliance.docgen',
     'aif_compliance.dashboard',
 ]
 
