@@ -41,6 +41,8 @@ jobs:
 
       - name: Run tests with pytest + coverage
         run: |
-          export PYTHONPATH=$PWD
+          cd ..
+          export PYTHONPATH=$PWD/aif_compliance
+          cd aif_compliance
           coverage run -m pytest
           coverage report -m
