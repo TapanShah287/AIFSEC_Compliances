@@ -32,7 +32,7 @@ jobs:
 
       - name: Add Django project to PYTHONPATH
         run: |
-          echo "PYTHONPATH=$GITHUB_WORKSPACE/aif_compliance" >> $GITHUB_ENV
+          echo "PYTHONPATH=$GITHUB_WORKSPACE" >> $GITHUB_ENV
 
       - name: Run migrations
         run: |
