@@ -12,13 +12,13 @@ urlpatterns = [
     path("admin/", admin.site.urls),
 
     # --- APIs ---
-    path("api/funds/", include("funds.api_urls")),           # ✅ DRF endpoints only
-    path("api/transactions/", include("transactions.urls")),
     path("api/transactions/recent/", RedirectView.as_view(url="/api/transactions/feed/", permanent=False)),
-    path("api/companies/", include("investee_companies.urls")),
-    path("api/investors/", include("investors.urls")),
-    path("api/compliance/", include("compliances.urls")),
-    path("api/docgen/", include("docgen.urls")),
+        path("api/funds/", include("aif_compliance.funds.api_urls")),           # ✅ DRF endpoints only
+        path("api/transactions/", include("aif_compliance.transactions.urls")),
+        path("api/companies/", include("aif_compliance.investee_companies.urls")),
+        path("api/investors/", include("aif_compliance.investors.urls")),
+        path("api/compliance/", include("aif_compliance.compliances.urls")),
+        path("api/docgen/", include("aif_compliance.docgen.urls")),
 
     # --- Auth ---
     path("accounts/login/", auth_views.LoginView.as_view(), name="login"),
@@ -26,7 +26,7 @@ urlpatterns = [
 
     # --- Portal ---
     path("portal/", TemplateView.as_view(template_name="portal/dashboard.html"), name="portal-home"),
-    path("portal/funds/", include("funds.urls")),            # ✅ Portal views only
+        path("portal/funds/", include("aif_compliance.funds.urls")),            # ✅ Portal views only
     path("portal/manager_entities/", include("manager_entities.urls")),
     path("portal/investors/", TemplateView.as_view(template_name="portal/investors.html"), name="portal-investors"),
     path("portal/investors/onboard/", TemplateView.as_view(template_name="portal/investor_onboard.html"), name="portal-investor-onboard"),
