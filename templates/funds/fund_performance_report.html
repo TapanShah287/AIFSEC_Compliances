@@ -1,0 +1,23 @@
+{% extends 'base.html' %}
+
+{% block title %}Performance Report for {{ fund.name }}{% endblock %}
+
+{% block content %}
+<div class="space-y-8">
+  <h1 class="text-3xl font-bold text-slate-900 mb-2">Performance Report for {{ fund.name }}</h1>
+  <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+    <div class="bg-white p-5 rounded-xl shadow border border-slate-200">
+      <h2 class="text-xs font-semibold uppercase tracking-wide text-slate-500">IRR</h2>
+      <p class="mt-2 text-2xl font-bold text-slate-900">{{ performance_data.irr }}</p>
+    </div>
+    <div class="bg-white p-5 rounded-xl shadow border border-slate-200">
+      <h2 class="text-xs font-semibold uppercase tracking-wide text-slate-500">TVPI</h2>
+      <p class="mt-2 text-2xl font-bold text-indigo-600">{{ performance_data.tvpi }}</p>
+    </div>
+    <div class="bg-white p-5 rounded-xl shadow border border-slate-200">
+      <h2 class="text-xs font-semibold uppercase tracking-wide text-slate-500">DPI</h2>
+      <p class="mt-2 text-2xl font-bold text-emerald-600">{{ performance_data.dpi }}</p>
+    </div>
+  </div>
+</div>
+{% endblock %}

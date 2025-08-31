@@ -1,0 +1,86 @@
+{% extends 'base.html' %}
+{% block title %}Add Company • AIF{% endblock %}
+
+{% block content %}
+<h1 class="text-3xl font-bold mb-6">Add Company</h1>
+
+<form class="bg-white rounded-xl shadow p-6 max-w-3xl space-y-6" onsubmit="return submitCompany(event)">
+  {% csrf_token %}
+
+  <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+    <div>
+      <label class="block text-sm text-secondary mb-1">Name</label>
+      <input name="name" class="w-full border rounded-lg px-3 py-2" required>
+    </div>
+
+    <div>
+      <label class="block text-sm text-secondary mb-1">CIN</label>
+      <input name="cin" class="w-full border rounded-lg px-3 py-2" placeholder="Optional">
+    </div>
+
+    <div>
+      <label class="block text-sm text-secondary mb-1">Incorporation Date</label>
+      <input name="incorporation_date" type="date" class="w-full border rounded-lg px-3 py-2">
+    </div>
+
+    <div>
+      <label class="block text-sm text-secondary mb-1">Industry</label>
+      <input name="industry" class="w-full border rounded-lg px-3 py-2" placeholder="e.g. Fintech">
+    </div>
+  </div>
+
+  <div id="company-error" class="text-rose-600 text-sm hidden"></div>
+
+  <div class="mt-2 flex justify-end gap-3">
+    <a href="{% url 'portal-companies' %}" class="px-4 py-2 bg-gray-200 rounded-lg">Cancel</a>
+    <button class="px-4 py-2 bg-primary hover:bg-indigo-700 text-white rounded-lg">Create Company</button>
+  </div>
+</form>
+{% endblock %}
+
+{% block scripts %}
+{# Resolve API if namespace exists; otherwise fallback to the correct path /api/investee_companies/ #}
+{% url 'investee_companies:company-list' as companies_api %}
+<script>
+// --- CSRF helper ---
+function getCookie(name){const v=`; ${document.cookie}`.split(`; ${name}=`);if(v.length===2)return v.pop().split(';').shift();return null;}
+const csrftoken = getCookie('csrftoken');
+
+// --- Final API endpoint (resolved or fallback) ---
+const API_COMPANIES = "{{ companies_api|default:'' }}" || "/api/investee_companies/";
+
+// --- fetch helper with CSRF + session cookie ---
+async function api(url, method='GET', body=null){
+  const opts = { method, credentials:'same-origin', headers:{ 'Accept':'application/json' } };
+  if(body!==null){ opts.headers['Content-Type']='application/json'; opts.headers['X-CSRFToken']=csrftoken; opts.body=JSON.stringify(body); }
+  const r = await fetch(url, opts);
+  if(!r.ok){ let msg; try{ msg=await r.json(); }catch{ msg=await r.text(); } throw new Error(typeof msg==='string'?msg:JSON.stringify(msg)); }
+  return r.json();
+}
+
+// collect form → object
+function collectForm(form){
+  const fd = new FormData(form);
+  const payload = Object.fromEntries(fd.entries());
+  // convert empty strings to null if your serializer expects nulls (optional)
+  Object.keys(payload).forEach(k=>{ if(payload[k]==='') delete payload[k] });
+  return payload;
+}
+
+async function submitCompany(e){
+  e.preventDefault();
+  const errEl = document.getElementById('company-error');
+  errEl.classList.add('hidden'); errEl.textContent = '';
+  try{
+    const payload = collectForm(e.target);
+    const res = await api(API_COMPANIES, 'POST', payload);  // ✅ correct endpoint
+    // redirect to your portal detail page
+    window.location.href = `/portal/companies/${res.id}/`;
+  }catch(err){
+    errEl.textContent = err.message || 'Failed to create company';
+    errEl.classList.remove('hidden');
+  }
+  return false;
+}
+</script>
+{% endblock %}

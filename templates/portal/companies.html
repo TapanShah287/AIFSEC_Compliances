@@ -1,0 +1,33 @@
+{% extends 'base.html' %}{% block title %}Companies • AIF{% endblock %}
+{% block content %}
+<div class="flex items-center justify-between mb-6">
+  <h1 class="text-3xl font-bold">Investee Companies</h1>
+  <a href="{% url 'portal-company-add' %}" class="px-4 py-2 bg-primary hover:bg-indigo-700 text-white rounded-lg shadow text-sm font-semibold">➕ Add Company</a>
+</div>
+<div class="bg-white rounded-xl shadow overflow-hidden">
+  <div class="overflow-x-auto">
+    <table class="min-w-full text-sm">
+      <thead class="bg-gray-100 text-secondary uppercase">
+        <tr><th class="px-6 py-3 text-left">Name</th><th class="px-6 py-3 text-left">Sector</th><th class="px-6 py-3 text-left">Incorporation</th><th class="px-6 py-3 text-right">Actions</th></tr>
+      </thead>
+      <tbody id="co-body" class="divide-y"></tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}
+{% block scripts %}
+<script>
+(async function(){
+  const data = await api('/api/companies/');
+  const tb = document.getElementById('co-body');
+  (data.results??data).forEach(c=>{
+    const tr = document.createElement('tr'); tr.className='hover:bg-gray-50';
+    tr.innerHTML = `<td class="px-6 py-3">${c.name}</td>
+      <td class="px-6 py-3">${c.sector||''}</td>
+      <td class="px-6 py-3">${c.incorporation_date||''}</td>
+      <td class="px-6 py-3 text-right"><a class="text-primary hover:underline" href="/portal/companies/${c.id}/">View</a></td>`;
+    tb.appendChild(tr);
+  });
+})()
+</script>
+{% endblock %}

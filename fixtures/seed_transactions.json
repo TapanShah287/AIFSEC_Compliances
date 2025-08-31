@@ -1,0 +1,22 @@
+[
+  {
+    "model": "transactions.investorcommitment",
+    "pk": 1,
+    "fields": {
+      "fund": 1,
+      "investor": 1,
+      "commitment_date": "2024-08-27",
+      "committed_amount": "200000000.00"
+    }
+  },
+  {
+    "model": "transactions.investorcommitment",
+    "pk": 2,
+    "fields": {
+      "fund": 1,
+      "investor": 2,
+      "commitment_date": "2024-08-27",
+      "committed_amount": "100000000.00"
+    }
+  }
+]

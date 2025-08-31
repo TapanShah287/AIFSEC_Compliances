@@ -1,0 +1,30 @@
+{% extends 'base.html' %}
+{% block title %}Portal • Companies{% endblock %}
+{% block content %}
+<div class="grid">
+
+  <div class="card">
+    <h3>Companies</h3>
+    <p>Open the API list in a new tab.</p>
+    <div class="actions"><a class="btn" href="/api/companies/" target="_blank">Open</a></div>
+  </div>
+
+  <div class="card">
+    <h3>Valuations</h3>
+    <p>Open the API list in a new tab.</p>
+    <div class="actions"><a class="btn" href="/api/companies/valuations/" target="_blank">Open</a></div>
+  </div>
+
+  <div class="card">
+    <h3>Financials</h3>
+    <p>Open the API list in a new tab.</p>
+    <div class="actions"><a class="btn" href="/api/companies/financials/" target="_blank">Open</a></div>
+  </div>
+
+  <div class="card">
+    <h3>Corporate Actions</h3>
+    <p>Open the API list in a new tab.</p>
+    <div class="actions"><a class="btn" href="/api/companies/corporate-actions/" target="_blank">Open</a></div>
+  </div>
+</div>
+{% endblock %}

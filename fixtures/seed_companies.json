@@ -1,0 +1,88 @@
+[
+  {
+    "model": "investee_companies.investeecompany",
+    "pk": 1,
+    "fields": {
+      "name": "Acme Robotics Pvt Ltd",
+      "sector": "Robotics",
+      "incorporation_date": "2023-08-27",
+      "cin": "U12345MH2018PTC123456",
+      "pan": "ACMER1234P"
+    }
+  },
+  {
+    "model": "investee_companies.investeecompany",
+    "pk": 2,
+    "fields": {
+      "name": "GreenGrid Energy Ltd",
+      "sector": "Energy",
+      "incorporation_date": "2024-08-27",
+      "cin": "L54321GJ2016PLC654321",
+      "pan": "GREEN9876G"
+    }
+  },
+  {
+    "model": "investee_companies.shareclass",
+    "pk": 1,
+    "fields": {
+      "company": 1,
+      "name": "Series A",
+      "is_preferred": true,
+      "face_value": "10.00"
+    }
+  },
+  {
+    "model": "investee_companies.shareclass",
+    "pk": 2,
+    "fields": {
+      "company": 2,
+      "name": "Equity",
+      "is_preferred": false,
+      "face_value": "10.00"
+    }
+  },
+  {
+    "model": "investee_companies.sharecapital",
+    "pk": 1,
+    "fields": {
+      "company": 1,
+      "share_class": 1,
+      "as_on_date": "2025-08-27",
+      "shares_outstanding": "1000000"
+    }
+  },
+  {
+    "model": "investee_companies.sharecapital",
+    "pk": 2,
+    "fields": {
+      "company": 2,
+      "share_class": 2,
+      "as_on_date": "2025-08-27",
+      "shares_outstanding": "5000000"
+    }
+  },
+  {
+    "model": "investee_companies.valuation",
+    "pk": 1,
+    "fields": {
+      "company": 1,
+      "share_class": 1,
+      "as_on_date": "2025-08-27",
+      "price_per_share": "125.00",
+      "method": "DCF",
+      "source": "Internal"
+    }
+  },
+  {
+    "model": "investee_companies.valuation",
+    "pk": 2,
+    "fields": {
+      "company": 2,
+      "share_class": 2,
+      "as_on_date": "2025-08-27",
+      "price_per_share": "40.00",
+      "method": "Comparable",
+      "source": "Analyst"
+    }
+  }
+]

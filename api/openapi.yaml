@@ -1,0 +1,339 @@
+openapi: 3.0.3
+info:
+  title: AIF Platform API
+  version: "0.1.0"
+  description: Minimal endpoints for Investors, Companies, Funds, Transactions, Valuations, NAV, and Compliance.
+servers:
+  - url: https://api.example.com
+paths:
+  /api/investors/:
+    get:
+      summary: List investors
+      parameters:
+        - in: query
+          name: kyc_status
+          schema: { type: string, enum: [PENDING, UNDER_REVIEW, COMPLIANT, REJECTED] }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/Investor" }
+    post:
+      summary: Create investor
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/InvestorCreate" }
+      responses:
+        "201": { description: Created }
+  /api/investors/{id}/:
+    get:
+      summary: Retrieve investor
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Investor" }
+    put:
+      summary: Update investor
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/InvestorUpdate" }
+      responses:
+        "200": { description: Updated }
+  /api/investors/{id}/kyc/:
+    get:
+      summary: Get KYC details
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer }
+      responses:
+        "200": { description: OK }
+    put:
+      summary: Update KYC details / status transition
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                status:
+                  type: string
+                  enum: [PENDING, UNDER_REVIEW, COMPLIANT, REJECTED]
+                remarks: { type: string }
+      responses:
+        "200": { description: Updated }
+  /api/companies/:
+    get:
+      summary: List companies
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/Company" }
+    post:
+      summary: Create company
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/CompanyCreate" }
+      responses:
+        "201": { description: Created }
+  /api/companies/{id}/corporate-actions/:
+    get:
+      summary: List corporate actions for a company
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer }
+      responses:
+        "200": { description: OK }
+    post:
+      summary: Create a corporate action
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/CorporateActionCreate" }
+      responses:
+        "201": { description: Created }
+  /api/funds/:
+    get:
+      summary: List funds
+      responses:
+        "200": { description: OK }
+    post:
+      summary: Create fund
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/FundCreate" }
+      responses:
+        "201": { description: Created }
+  /api/funds/{id}/portfolio/:
+    get:
+      summary: Fund portfolio snapshot (positions + cash + MV)
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer }
+      responses:
+        "200": { description: OK }
+  /api/funds/{id}/nav/:
+    get:
+      summary: Latest fund NAV
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer }
+      responses:
+        "200": { description: OK }
+  /api/transactions/purchases/:
+    post:
+      summary: Book a purchase
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/PurchaseCreate" }
+      responses:
+        "201": { description: Created }
+  /api/transactions/redemptions/:
+    post:
+      summary: Book a redemption (consumes FIFO lots)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/RedemptionCreate" }
+      responses:
+        "201": { description: Created }
+  /api/drawdowns/calls/:
+    post:
+      summary: Create a capital call
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/CapitalCallCreate" }
+      responses:
+        "201": { description: Created }
+  /api/drawdowns/receipts/:
+    post:
+      summary: Record a drawdown receipt (per investor)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/DrawdownReceiptCreate" }
+      responses:
+        "201": { description: Created }
+  /api/distributions/:
+    post:
+      summary: Book a distribution (fund → investor)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/DistributionCreate" }
+      responses:
+        "201": { description: Created }
+  /api/compliance/tasks/:
+    get:
+      summary: List compliance tasks
+      responses:
+        "200": { description: OK }
+    post:
+      summary: Create compliance task
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/ComplianceTaskCreate" }
+      responses:
+        "201": { description: Created }
+components:
+  schemas:
+    Investor:
+      type: object
+      properties:
+        id: { type: integer }
+        name: { type: string }
+        investor_type: { type: string }
+        kyc_status: { type: string }
+        pan: { type: string }
+        contact_email: { type: string, format: email }
+    InvestorCreate:
+      type: object
+      required: [name, investor_type]
+      properties:
+        name: { type: string }
+        investor_type: { type: string, enum: [SPONSOR, LP, OTHER] }
+        pan: { type: string }
+        contact_email: { type: string, format: email }
+    InvestorUpdate:
+      allOf:
+        - $ref: "#/components/schemas/InvestorCreate"
+    Company:
+      type: object
+      properties:
+        id: { type: integer }
+        name: { type: string }
+        sector: { type: string }
+        incorporation_date: { type: string, format: date }
+    CompanyCreate:
+      type: object
+      required: [name]
+      properties:
+        name: { type: string }
+        sector: { type: string }
+        incorporation_date: { type: string, format: date }
+    CorporateActionCreate:
+      type: object
+      required: [event_type, ex_date, ratio]
+      properties:
+        event_type: { type: string, enum: [SPLIT, BONUS, RIGHTS, BUYBACK] }
+        ex_date: { type: string, format: date }
+        ratio: { type: string, example: "2:1" }
+        notes: { type: string }
+    FundCreate:
+      type: object
+      required: [name, category, corpus, inception_date]
+      properties:
+        name: { type: string }
+        category: { type: string }
+        corpus: { type: number }
+        inception_date: { type: string, format: date }
+        target_close_date: { type: string, format: date }
+    PurchaseCreate:
+      type: object
+      required: [fund, company, share_class, quantity, price, trade_date]
+      properties:
+        fund: { type: integer }
+        company: { type: integer }
+        share_class: { type: integer }
+        quantity: { type: number }
+        price: { type: number }
+        fees: { type: number }
+        trade_date: { type: string, format: date }
+    RedemptionCreate:
+      type: object
+      required: [fund, company, share_class, quantity, price, trade_date]
+      properties:
+        fund: { type: integer }
+        company: { type: integer }
+        share_class: { type: integer }
+        quantity: { type: number }
+        price: { type: number }
+        trade_date: { type: string, format: date }
+    CapitalCallCreate:
+      type: object
+      required: [fund, call_date, amount_called]
+      properties:
+        fund: { type: integer }
+        call_date: { type: string, format: date }
+        amount_called: { type: number }
+        reference: { type: string }
+    DrawdownReceiptCreate:
+      type: object
+      required: [fund, investor, receipt_date, amount_received]
+      properties:
+        fund: { type: integer }
+        investor: { type: integer }
+        receipt_date: { type: string, format: date }
+        amount_received: { type: number }
+        reference: { type: string }
+    DistributionCreate:
+      type: object
+      required: [fund, investor, paid_date, gross_amount]
+      properties:
+        fund: { type: integer }
+        investor: { type: integer }
+        paid_date: { type: string, format: date }
+        gross_amount: { type: number }
+        tax_withheld: { type: number }
+    ComplianceTaskCreate:
+      type: object
+      required: [topic, due_date]
+      properties:
+        topic: { type: string }
+        due_date: { type: string, format: date }
+        status: { type: string, enum: [PENDING, IN_PROGRESS, COMPLETED, OVERDUE] }

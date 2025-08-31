@@ -1,0 +1,276 @@
+{% extends 'base.html' %}
+{% block title %}Company • AIF{% endblock %}
+
+{% block content %}
+<h1 class="text-3xl font-bold mb-6" id="co-name">Company</h1>
+
+<div class="grid grid-cols-1 xl:grid-cols-3 gap-6">
+  <!-- Left: overview + shareholding + actions -->
+  <div class="xl:col-span-2 space-y-6">
+    <!-- Overview -->
+    <div class="bg-white rounded-xl shadow p-6">
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-6" id="co-overview">
+        <div><div class="text-secondary text-sm">Sector</div><div class="text-lg font-semibold">-</div></div>
+        <div><div class="text-secondary text-sm">Incorporation</div><div>-</div></div>
+        <div><div class="text-secondary text-sm">CIN</div><div>-</div></div>
+      </div>
+    </div>
+
+    <!-- Shareholding Pattern -->
+    <div class="bg-white rounded-xl shadow">
+      <div class="p-6 border-b flex items-center justify-between">
+        <h2 class="text-xl font-semibold">Shareholding Pattern</h2>
+        <div class="flex items-center gap-2">
+          <a id="add-shareholding-link" href="#" class="inline-flex items-center px-3 py-1.5 rounded-lg bg-indigo-600 text-white text-sm hover:bg-indigo-700">
+            + Add Shareholding
+          </a>
+          <button id="export-shareholding" type="button" class="inline-flex items-center px-3 py-1.5 rounded-lg border text-sm hover:bg-slate-50">
+            Export CSV
+          </button>
+        </div>
+      </div>
+      <div class="p-6">
+        <div id="share-asof" class="text-sm text-secondary mb-3" style="display:none"></div>
+        <div class="overflow-x-auto">
+          <table class="min-w-full text-sm" id="share-table" style="display:none">
+            <thead class="text-left text-slate-500">
+              <tr>
+                <th class="py-2 pr-4">Holder</th>
+                <th class="py-2 pr-4">Class</th>
+                <th class="py-2 pr-4 text-right">Shares</th>
+                <th class="py-2 pr-4 text-right">Face Value / Share</th>
+                <th class="py-2 pr-4 text-right">Total Face Value</th>
+                <th class="py-2 pr-4 text-right">% of Company</th>
+                <th class="py-2 pr-4">As of</th>
+              </tr>
+            </thead>
+            <tbody id="share-tbody"></tbody>
+            <tfoot class="border-t">
+              <tr>
+                <td class="py-2 pr-4 font-medium">Total</td>
+                <td></td>
+                <td class="py-2 pr-4 text-right font-medium" id="share-total">0</td>
+                <td></td>
+                <td class="py-2 pr-4 text-right font-medium" id="share-total-fv">₹0</td>
+                <td></td>
+                <td></td>
+              </tr>
+            </tfoot>
+          </table>
+        </div>
+        <div id="share-empty" class="text-slate-500 text-sm">No shareholding data available.</div>
+      </div>
+    </div>
+
+    <!-- Corporate Actions -->
+    <div class="bg-white rounded-xl shadow">
+      <div class="p-6 border-b">
+        <h2 class="text-xl font-semibold">Corporate Actions</h2>
+      </div>
+      <div class="p-6" id="co-actions">No corporate actions recorded.</div>
+    </div>
+  </div>
+
+  <!-- Right: financials + valuation -->
+  <div class="space-y-6">
+    <div class="bg-white rounded-xl shadow p-6">
+      <h2 class="text-xl font-semibold mb-4">Financials</h2>
+      <div id="co-fin" class="text-sm text-secondary">No financial data available.</div>
+    </div>
+
+    <!-- Valuation -->
+    <div class="bg-white rounded-xl shadow">
+      <div class="p-6 border-b flex items-center justify-between">
+        <h2 class="text-xl font-semibold">Valuation (Market Cap)</h2>
+        <a id="add-valuation-link" href="#" class="inline-flex items-center px-3 py-1.5 rounded-lg bg-indigo-600 text-white text-sm hover:bg-indigo-700">
+          + Add Market Price
+        </a>
+      </div>
+      <div class="p-6" id="co-val">No valuation data available.</div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+(async function () {
+  const m = location.pathname.match(/compan(?:y|ies)\/(\d+)/);
+  const id = m && m[1];
+  if (!id) { document.getElementById('co-name').textContent = 'Company Not Found'; return; }
+
+  const API_JSON = `/api/companies/company/${id}/json/`;
+  const API_BASE = `/api/companies/${id}`;
+  const EP = {
+    share: `${API_BASE}/shareholding/`,
+    acts:  `${API_BASE}/actions/`,
+    fins:  `${API_BASE}/financials/`,
+    vals:  `${API_BASE}/valuations/`,
+    market:`${API_BASE}/market-valuation/`,
+  };
+
+  // Assign Add buttons
+  document.getElementById('add-shareholding-link').href = `/api/companies/company/${id}/add-shareholding/`;
+  document.getElementById('add-valuation-link').href = `/api/companies/company/${id}/add-share-valuation/`;
+
+  async function get(url){
+    const r = await fetch(url, { credentials: 'include', headers: { 'X-Requested-With':'XMLHttpRequest' }});
+    if (!r.ok) throw new Error(`HTTP ${r.status} on ${url}`);
+    return r.json();
+  }
+  const asArray = x => Array.isArray(x) ? x : (x && x.results ? x.results : []);
+
+  // --- 1) Overview ---
+  try {
+    const { company: c } = await get(API_JSON);
+    document.getElementById('co-name').textContent = c?.name || 'Company';
+    document.getElementById('co-overview').innerHTML = `
+      <div><div class="text-secondary text-sm">Sector</div><div class="text-lg font-semibold">${c?.sector || '-'}</div></div>
+      <div><div class="text-secondary text-sm">Incorporation</div><div>${c?.incorporation_date || '-'}</div></div>
+      <div><div class="text-secondary text-sm">CIN</div><div>${c?.cin || '-'}</div></div>`;
+  } catch(e){ console.error(e); }
+
+  // --- 2) Shareholding ---
+  const getHolder = s => s.display_holder || s.holder_name || (s.investor && (s.investor.name || s.investor)) || 'Holder';
+  const getClass  = s => s.share_type_display || s.share_type || 'Equity';
+  const getShares = s => Number(s.number_of_shares ?? s.shares ?? 0);
+  const getAsOf   = s => s.as_of_date || s.date || '';
+  const getFVPS   = s => Number(s.face_value_per_share ?? s.face_value ?? 0);
+  const getTFV    = s => Number(s.total_face_value ?? (getFVPS(s) * getShares(s)));
+  const getPctCo  = s => Number(s.percent_of_company ?? 0);
+
+  try {
+    const share = await get(EP.share).catch(()=>({results:[]}));
+    const rows = asArray(share);
+    const empty = document.getElementById('share-empty');
+    const table = document.getElementById('share-table');
+    const tbody = document.getElementById('share-tbody');
+    const totalCell = document.getElementById('share-total');
+    const totalFVCell = document.getElementById('share-total-fv');
+
+    if (rows.length === 0){
+      empty.style.display = 'block';
+      table.style.display = 'none';
+    } else {
+      empty.style.display = 'none';
+      table.style.display = 'table';
+      tbody.innerHTML = '';
+      let totalShares = 0, totalFV = 0;
+
+      rows.forEach((s) => {
+        const shares = getShares(s);
+        const fvps = getFVPS(s);
+        const tfv  = getTFV(s);
+        totalShares += shares;
+        totalFV     += tfv;
+
+        const tr = document.createElement('tr');
+        tr.className = 'border-t';
+        tr.innerHTML = `
+          <td class="py-2 pr-4">${getHolder(s)}</td>
+          <td class="py-2 pr-4">${getClass(s)}</td>
+          <td class="py-2 pr-4 text-right">${shares.toLocaleString('en-IN')}</td>
+          <td class="py-2 pr-4 text-right">₹${fvps.toLocaleString('en-IN')}</td>
+          <td class="py-2 pr-4 text-right">₹${tfv.toLocaleString('en-IN')}</td>
+          <td class="py-2 pr-4 text-right">${getPctCo(s).toFixed(2)}%</td>
+          <td class="py-2 pr-4">${getAsOf(s)}</td>
+        `;
+        tbody.appendChild(tr);
+      });
+
+      totalCell.textContent = totalShares.toLocaleString('en-IN');
+      totalFVCell.textContent = '₹' + totalFV.toLocaleString('en-IN');
+    }
+  } catch(e){ console.error(e); }
+
+  // --- 3) Corporate Actions ---
+  try {
+    const acts = asArray(await get(EP.acts).catch(()=>({results:[]})));
+    const div = document.getElementById('co-actions');
+    if (acts.length === 0){ div.textContent = 'No corporate actions recorded.'; }
+    else {
+      div.textContent='';
+      acts.forEach(a => {
+        const row = document.createElement('div');
+        row.className = 'flex justify-between py-1 border-b border-slate-100 last:border-b-0';
+        row.innerHTML = `<span>${a.action_date || a.date || '-'}</span>
+                         <span>${a.action_type_display || a.action_type || '-'}</span>`;
+        div.appendChild(row);
+      });
+    }
+  } catch(e){ console.error(e); }
+
+  // --- 4) Financials ---
+  try {
+    const finDiv = document.getElementById('co-fin');
+    const fins = asArray(await get(EP.fins).catch(()=>({results:[]})));
+    if (fins.length === 0) { finDiv.textContent = 'No financial data available.'; }
+    else {
+      finDiv.textContent = '';
+      fins.forEach(f => {
+        const card = document.createElement('div');
+        card.className = 'border rounded-lg p-3 mb-2';
+        card.innerHTML = `<div class="font-semibold mb-1">Period Ending: ${f.period_date || f.period || '-'}</div>
+          <div class="grid grid-cols-2 gap-2 text-sm font-mono">
+            <div>Revenue</div><div class="text-right">₹${f.revenue ? Number(f.revenue).toLocaleString('en-IN') : '-'}</div>
+            <div>EBITDA</div><div class="text-right">₹${f.ebitda ? Number(f.ebitda).toLocaleString('en-IN') : '-'}</div>
+            <div>Net Income</div><div class="text-right">₹${f.net_income ? Number(f.net_income).toLocaleString('en-IN') : '-'}</div>
+          </div>`;
+        finDiv.appendChild(card);
+      });
+    }
+  } catch(e){ console.error(e); }
+
+  // --- 5) Valuation (Market Cap) ---
+  try {
+    const valDiv = document.getElementById('co-val');
+    const mv = await get(EP.market).catch(() => null);
+    if (!mv || !mv.classes || mv.classes.length === 0) {
+      valDiv.textContent = 'No valuation data available.';
+    } else {
+      const wrap = document.createElement('div');
+      wrap.innerHTML = `
+        <div class="text-sm text-secondary mb-2">As of ${mv.as_of || '-'}</div>
+        <div class="overflow-x-auto">
+          <table class="min-w-full text-sm">
+            <thead class="text-left text-slate-500">
+              <tr>
+                <th class="py-2 pr-4">Class</th>
+                <th class="py-2 pr-4 text-right">Shares</th>
+                <th class="py-2 pr-4 text-right">Per Share Value</th>
+                <th class="py-2 pr-4 text-right">Market Value</th>
+              </tr>
+            </thead>
+            <tbody id="mv-body"></tbody>
+            <tfoot class="border-t">
+              <tr>
+                <td class="py-2 pr-4 font-medium" colspan="3">Total Market Cap</td>
+                <td class="py-2 pr-4 text-right font-semibold" id="mv-total">₹0</td>
+              </tr>
+            </tfoot>
+          </table>
+        </div>
+      `;
+      valDiv.textContent = '';
+      valDiv.appendChild(wrap);
+
+      const tbody = wrap.querySelector('#mv-body');
+      let total = 0;
+      mv.classes.forEach(c => {
+        total += Number(c.market_value || 0);
+        const tr = document.createElement('tr');
+        tr.className = 'border-t';
+        tr.innerHTML = `
+          <td class="py-2 pr-4">${c.share_type_display || c.share_type}</td>
+          <td class="py-2 pr-4 text-right">${Number(c.shares || 0).toLocaleString('en-IN')}</td>
+          <td class="py-2 pr-4 text-right">₹${Number(c.per_share_value || 0).toLocaleString('en-IN', {minimumFractionDigits: 2})}</td>
+          <td class="py-2 pr-4 text-right">₹${Number(c.market_value || 0).toLocaleString('en-IN')}</td>
+        `;
+        tbody.appendChild(tr);
+      });
+      wrap.querySelector('#mv-total').textContent = '₹' + total.toLocaleString('en-IN');
+    }
+  } catch(e){ console.error(e); }
+})();
+</script>
+{% endblock %}

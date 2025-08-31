@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mx-auto p-6">
+  <h1 class="text-2xl font-bold mb-6">Add Commitment for {{ fund.name }}</h1>
+
+  <form method="post" class="space-y-4 bg-white p-6 rounded shadow">
+    {% csrf_token %}
+    
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div>
+        <label class="block text-sm text-gray-600">Investor</label>
+        {{ form.investor }}
+        {% if form.investor.errors %}
+          <p class="text-red-500 text-sm">{{ form.investor.errors }}</p>
+        {% endif %}
+      </div>
+
+      <div>
+        <label class="block text-sm text-gray-600">Commitment Date</label>
+        {{ form.commitment_date }}
+        {% if form.commitment_date.errors %}
+          <p class="text-red-500 text-sm">{{ form.commitment_date.errors }}</p>
+        {% endif %}
+      </div>
+
+      <div>
+        <label class="block text-sm text-gray-600">Amount Committed</label>
+        {{ form.amount_committed }}
+        {% if form.amount_committed.errors %}
+          <p class="text-red-500 text-sm">{{ form.amount_committed.errors }}</p>
+        {% endif %}
+      </div>
+    </div>
+
+    <div class="flex justify-end mt-4">
+      <a href="{% url 'funds:fund_detail' fund.pk %}" class="px-4 py-2 bg-gray-300 rounded mr-2">Cancel</a>
+      <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded">Save Commitment</button>
+    </div>
+  </form>
+</div>
+{% endblock %}

@@ -1,0 +1,77 @@
+{% extends 'base.html' %}
+{% block title %}{{ company.name }} — Company Dashboard{% endblock %}
+{% block content %}
+<div class="flex items-center justify-between mb-6">
+  <h1 class="text-2xl font-bold">{{ company.name }}</h1>
+  <div class="text-sm text-secondary">
+    CIN: <span class="font-mono">{{ company.cin }}</span> • Incorporated: {{ company.incorporation_date }}
+  </div>
+</div>
+
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+  <!-- Left: Shareholding + Corporate Actions -->
+  <div class="lg:col-span-2 space-y-6">
+    <!-- Shareholding snapshot -->
+    <div class="bg-white rounded-xl shadow border border-slate-200">
+      <div class="p-4 border-b">
+        <h2 class="text-lg font-semibold">Equity Shareholding Snapshot</h2>
+        <p class="text-sm text-slate-500">Top holders and their % of Equity class.</p>
+      </div>
+      <div class="p-4">
+        {% if shareholding_snapshot %}
+        <div class="overflow-x-auto">
+          <table class="min-w-full text-sm">
+            <thead class="text-left text-slate-500">
+              <tr>
+                <th class="py-2 pr-4">Holder</th>
+                <th class="py-2 pr-4 text-right">Shares</th>
+                <th class="py-2 pr-4 text-right">% of Equity</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for r in shareholding_snapshot %}
+              <tr class="border-t">
+                <td class="py-2 pr-4">{{ r.holder }}</td>
+                <td class="py-2 pr-4 text-right">{{ r.shares|floatformat:0 }}</td>
+                <td class="py-2 pr-4 text-right">{{ r.percent|floatformat:2 }}%</td>
+              </tr>
+              {% endfor %}
+            </tbody>
+            <tfoot class="border-t">
+              <tr>
+                <td class="py-2 pr-4 font-medium">Total equity shares</td>
+                <td class="py-2 pr-4 text-right font-medium">{{ total_eq_shares|floatformat:0 }}</td>
+                <td></td>
+              </tr>
+            </tfoot>
+          </table>
+        </div>
+        {% else %}
+        <div class="text-slate-500 text-sm">No equity shareholding captured yet.</div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+  <!-- Right: At-a-glance -->
+  <div class="space-y-6">
+    <div class="bg-white rounded-xl shadow border border-slate-200 p-4">
+      <h3 class="text-base font-semibold mb-2">Company</h3>
+      <div class="text-sm">
+        <div class="flex justify-between py-1"><span>Name</span><span class="font-medium">{{ company.name }}</span></div>
+        <div class="flex justify-between py-1"><span>CIN</span><span class="font-mono">{{ company.cin }}</span></div>
+        <div class="flex justify-between py-1"><span>Incorporation</span><span>{{ company.incorporation_date }}</span></div>
+      </div>
+    </div>
+    <div class="bg-white rounded-xl shadow border border-slate-200 p-4">
+      <h3 class="text-base font-semibold mb-2">Quick Links</h3>
+      <div class="flex flex-col gap-2 text-sm">
+        <a class="text-indigo-700 hover:underline" href="{% url 'investee_companies:company_shareholding_pattern' company.pk %}">Shareholding Pattern</a>
+        <a class="text-indigo-700 hover:underline" href="{% url 'investee_companies:company_cap_table' company.pk %}">Cap Table</a>
+        <a class="text-indigo-700 hover:underline" href="{% url 'investee_companies:add_shareholding' company.pk %}">Add Shareholding</a>
+        <a class="text-indigo-700 hover:underline" href="{% url 'investee_companies:add_share_valuation' company.pk %}">Add Share Valuation</a>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

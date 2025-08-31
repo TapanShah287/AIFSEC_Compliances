@@ -1,0 +1,22 @@
+[
+  {
+    "model": "investors.investor",
+    "pk": 1,
+    "fields": {
+      "name": "Alpha Family Office",
+      "investor_type": "LP",
+      "pan": "ABCDE1234F",
+      "contact_email": "alpha@example.com"
+    }
+  },
+  {
+    "model": "investors.investor",
+    "pk": 2,
+    "fields": {
+      "name": "Beta Trust",
+      "investor_type": "LP",
+      "pan": "PQRSX6789Z",
+      "contact_email": "beta@example.com"
+    }
+  }
+]

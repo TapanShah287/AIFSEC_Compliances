@@ -1,0 +1,75 @@
+{% extends 'base.html' %}{% block title %}Dashboard • AIF{% endblock %}
+{% block content %}
+  <div class="mb-8">
+    <h1 class="text-4xl font-bold mb-2">Dashboard</h1>
+    <p class="text-secondary text-lg">Overview of funds, investors, companies and compliance.</p>
+  </div>
+  <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6 mb-8">
+    <div class="bg-white p-6 rounded-xl shadow"><div class="text-secondary">Funds</div><div id="kpi-funds" class="text-3xl font-semibold">—</div></div>
+    <div class="bg-white p-6 rounded-xl shadow"><div class="text-secondary">Investors</div><div id="kpi-investors" class="text-3xl font-semibold">—</div></div>
+    <div class="bg-white p-6 rounded-xl shadow"><div class="text-secondary">Companies</div><div id="kpi-companies" class="text-3xl font-semibold">—</div></div>
+    <div class="bg-white p-6 rounded-xl shadow"><div class="text-secondary">Open Compliance</div><div id="kpi-compliance" class="text-3xl font-semibold">—</div></div>
+  </div>
+  <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+    <div class="lg:col-span-2 bg-white rounded-xl shadow overflow-hidden">
+      <div class="flex items-center justify-between px-6 py-4 border-b">
+        <h2 class="text-xl font-semibold">Recent Transactions</h2>
+        <a href="{% url 'portal-transactions' %}" class="text-primary hover:underline text-sm">View all</a>
+      </div>
+      <div class="overflow-x-auto">
+        <table class="min-w-full text-sm">
+          <thead class="bg-gray-100 text-secondary uppercase">
+            <tr>
+              <th class="px-6 py-3 text-left">Date</th>
+              <th class="px-6 py-3 text-left">Type</th>
+              <th class="px-6 py-3 text-left">Fund</th>
+              <th class="px-6 py-3 text-left">Company</th>
+              <th class="px-6 py-3 text-right">Amount</th>
+            </tr>
+          </thead>
+          <tbody id="tx-body" class="divide-y"></tbody>
+        </table>
+      </div>
+    </div>
+    <div class="bg-white rounded-xl shadow overflow-hidden">
+      <div class="px-6 py-4 border-b"><h2 class="text-xl font-semibold">KYC Status</h2></div>
+      <div id="kyc-panel" class="p-6 space-y-3 text-sm"></div>
+    </div>
+  </div>
+{% endblock %}
+{% block scripts %}
+<script>
+(async function(){
+  try{
+    const [funds, investors, companies, tasks, tx] = await Promise.all([
+      api('/api/funds/'), api('/api/investors/'), api('/api/companies/'),
+      api('/api/compliance/tasks/'), api('/api/transactions/recent/')
+    ]);
+    document.getElementById('kpi-funds').textContent = funds.count ?? funds.length ?? '—';
+    document.getElementById('kpi-investors').textContent = investors.count ?? investors.length ?? '—';
+    document.getElementById('kpi-companies').textContent = companies.count ?? companies.length ?? '—';
+    document.getElementById('kpi-compliance').textContent = tasks.open_count ?? tasks.length ?? '—';
+    const tb = document.getElementById('tx-body');
+    (tx.results ?? tx).slice(0,8).forEach(r=>{
+      const tr = document.createElement('tr');
+      tr.className='hover:bg-gray-50';
+      tr.innerHTML = `<td class="px-6 py-3">${r.date || r.purchase_date || ''}</td>
+        <td class="px-6 py-3">${r.type || r.kind || r.status || ''}</td>
+        <td class="px-6 py-3">${r.fund_name || r.fund || ''}</td>
+        <td class="px-6 py-3">${r.company_name || r.investee_company || ''}</td>
+        <td class="px-6 py-3 text-right">₹${(r.amount || r.total || r.purchase_rate || 0)}</td>`;
+      tb.appendChild(tr);
+    });
+    const panel = document.getElementById('kyc-panel');
+    (investors.results ?? investors).slice(0,6).forEach(i=>{
+      const ok = i.kyc_status === 'COMPLIANT' || i.kyc_compliant === true;
+      const row = document.createElement('div');
+      row.className='flex items-center justify-between';
+      row.innerHTML = `<span>${i.name || i.full_name || 'Investor'}</span>
+        <span class="px-2 py-1 rounded-full text-xs ${ok?'bg-success/20 text-success':'bg-danger/20 text-danger'}">${ok?'Compliant':'Pending'}</span>`;
+      panel.appendChild(row);
+    });
+  }catch(e){ console.warn(e); }
+})()
+</script>
+{% endblock %}

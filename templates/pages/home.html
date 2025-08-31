@@ -1,0 +1,44 @@
+{% extends 'base.html' %}
+{% block title %}Portal • Home{% endblock %}
+{% block content %}
+<div class="kpi">
+  <div class="tile"><div class="l">Funds</div><div class="v">→</div></div>
+  <div class="tile"><div class="l">Investors</div><div class="v">→</div></div>
+  <div class="tile"><div class="l">Companies</div><div class="v">→</div></div>
+  <div class="tile"><div class="l">Compliance</div><div class="v">→</div></div>
+</div>
+<div class="grid">
+  <div class="card">
+    <h3>Funds</h3>
+    <p>Create funds, view NAV endpoints, commitments & drawdowns.</p>
+    <div class="actions">
+      <a class="btn" href="/api/funds/" target="_blank">Open Funds API</a>
+      <a class="btn-outline" href="{% url 'portal-funds' %}">Portal View</a>
+    </div>
+  </div>
+  <div class="card">
+    <h3>Investors</h3>
+    <p>Onboarding + KYC status updates.</p>
+    <div class="actions">
+      <a class="btn" href="/api/investors/" target="_blank">Open Investors API</a>
+      <a class="btn-outline" href="{% url 'portal-investors' %}">Portal View</a>
+    </div>
+  </div>
+  <div class="card">
+    <h3>Companies</h3>
+    <p>Corporate actions, financials, and valuations.</p>
+    <div class="actions">
+      <a class="btn" href="/api/companies/" target="_blank">Open Companies API</a>
+      <a class="btn-outline" href="{% url 'portal-companies' %}">Portal View</a>
+    </div>
+  </div>
+  <div class="card">
+    <h3>Compliance</h3>
+    <p>Tasks & document tracking.</p>
+    <div class="actions">
+      <a class="btn" href="/api/compliance/tasks/" target="_blank">Tasks API</a>
+      <a class="btn-outline" href="{% url 'portal-compliance' %}">Portal View</a>
+    </div>
+  </div>
+</div>
+{% endblock %}

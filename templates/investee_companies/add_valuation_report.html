@@ -1,0 +1,52 @@
+{% extends 'base.html' %}
+{% extends "base.html" %}
+{% block title %}Add Valuation for {{ company.name }}{% endblock %}
+{% block content %}
+<div class="max-w-2xl mx-auto">
+  <div class="flex justify-between items-center mb-6">
+    <h1 class="text-2xl font-semibold">Add Valuation Report for {{ company.name }}</h1>
+    <a href="{% url 'investee_companies:investee_company_detail' company.pk %}" class="px-3 py-2 text-sm border rounded-lg hover:bg-slate-100">← Back to Company</a>
+  </div>
+
+  <form method="post" enctype="multipart/form-data" class="bg-white shadow-lg rounded-xl p-6 space-y-8 border border-slate-200">
+    {% csrf_token %}
+    <div class="space-y-4">
+      <h2 class="text-lg font-medium text-slate-800">Report Details</h2>
+      <div>
+        <label class="block text-sm font-medium text-slate-700 mb-1">Valuation date</label>
+        {{ form.valuation_date }}
+      </div>
+      <div>
+        <label class="block text-sm font-medium text-slate-700 mb-1">Report file (Optional)</label>
+        {{ form.report_file }}
+      </div>
+    </div>
+
+    <div class="space-y-4 border-t pt-6">
+      <h2 class="text-lg font-medium text-slate-800">Per Share Values</h2>
+      {{ formset.management_form }}
+      {% for form in formset %}
+      <div class="grid grid-cols-2 gap-4 items-start p-4 border rounded-md bg-slate-50">
+        <div class="font-medium text-sm text-slate-700 pt-2">
+          <p>{{ form.initial.share_capital }}</p>
+          {{ form.share_capital }}
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-slate-600 mb-1">Per Share Value (₹)</label>
+          {{ form.per_share_value }}
+          {% for error in form.per_share_value.errors %}
+            <p class="text-xs text-rose-600 mt-1">{{ error }}</p>
+          {% endfor %}
+        </div>
+      </div>
+      {% empty %}
+      <p class="text-sm text-slate-500 text-center p-4">This company has no share capital defined. Please add share capital before adding a valuation.</p>
+      {% endfor %}
+    </div>
+
+    <div class="mt-6 pt-4 border-t">
+      <button type="submit" class="px-4 py-2 bg-slate-800 text-white font-semibold rounded-lg shadow hover:bg-slate-900 text-sm">Save Valuation</button>
+    </div>
+  </form>
+</div>
+{% endblock %}

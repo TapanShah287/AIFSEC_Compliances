@@ -1,0 +1,16 @@
+<div class="modal fade" id="modalAddTask" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog"><form class="modal-content" onsubmit="Portal.submitTask(event)">
+    <div class="modal-header"><h5 class="modal-title">New Compliance Task</h5><button class="btn-close" data-bs-dismiss="modal"></button></div>
+    <div class="modal-body">
+      <div class="row g-3">
+        <div class="col-12"><label class="form-label">Title</label><input name="title" class="form-control" required></div>
+        <div class="col-md-6"><label class="form-label">Related Model</label><input name="related_model" class="form-control" placeholder="purchase/redemption/corp_action"></div>
+        <div class="col-md-6"><label class="form-label">Related ID</label><input name="related_id" type="number" class="form-control"></div>
+        <div class="col-md-6"><label class="form-label">Due Date</label><input name="due_date" type="date" class="form-control"></div>
+        <div class="col-md-6"><label class="form-label">Status</label><select name="status" class="form-select"><option>Open</option><option>Done</option></select></div>
+      </div>
+      <div id="task-error" class="text-danger small d-none mt-2"></div>
+    </div>
+    <div class="modal-footer"><button class="btn btn-primary">Save</button></div>
+  </form></div>
+</div>

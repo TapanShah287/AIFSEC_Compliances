@@ -1,0 +1,92 @@
+{% extends "base.html" %}
+
+{% block title %}Funds{% endblock %}
+
+{% block content %}
+<h1 class="text-2xl font-semibold mb-6">AIF Funds</h1>
+
+<!-- Toolbar -->
+<div class="mb-4 flex flex-wrap items-center gap-3">
+  <form method="get" class="flex items-center gap-2">
+    <input name="q" value="{{ request.GET.q }}" placeholder="Search funds..."
+           class="px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring focus:ring-indigo-200">
+    <button class="px-3 py-2 rounded-lg text-sm bg-slate-800 text-white">Search</button>
+    {% if request.GET.q %}
+      <a href="." class="text-sm text-slate-600 underline">Clear</a>
+    {% endif %}
+  </form>
+    <a href="{% url 'funds:fund_add' %}" class="ml-auto px-3 py-2 bg-indigo-600 text-white rounded-lg text-sm shadow">
+        ➕ Add Fund
+    </a>
+</div>
+
+<!-- List -->
+<div class="bg-white shadow rounded-lg overflow-hidden border border-slate-200">
+  <h2 class="text-sm font-semibold px-4 py-3 border-b bg-slate-50 text-slate-700 uppercase">Funds</h2>
+
+  {% if funds %}
+  <div class="overflow-x-auto">
+    <table class="min-w-full text-sm">
+      <thead class="bg-slate-100 text-slate-700 uppercase text-xs">
+        <tr>
+          <th class="px-4 py-2 text-left">Name</th>
+          <th class="px-4 py-2 text-left">Manager</th>
+          <th class="px-4 py-2 text-left">Category</th>
+          <th class="px-4 py-2 text-right">Corpus (₹)</th>
+          <th class="px-4 py-2 text-center">Status</th>
+          <th class="px-4 py-2 text-right">Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for f in funds %}
+        <tr class="border-t hover:bg-slate-50">
+          <td class="px-4 py-2">
+            <a href="{% url 'funds:fund_detail' f.pk %}" class="font-medium text-indigo-700 hover:underline">{{ f.name }}</a>
+          </td>
+            <td class="px-4 py-2">
+              {% if f.manager %}
+                <a class="text-indigo-700 hover:underline" href="{% url 'manager_entities:manager_detail' f.manager.pk %}">
+                  {{ f.manager.name }}
+                </a>
+              {% else %}
+                <span class="text-slate-500 italic">No Manager</span>
+              {% endif %}
+            </td>
+          <td class="px-4 py-2">{{ f.category }}</td>
+          <td class="px-4 py-2 text-right">₹{{ f.corpus|floatformat:2 }}</td>
+          <td class="px-4 py-2 text-center">
+            {% if f.active %}
+              <span class="px-2 py-1 bg-emerald-100 text-emerald-700 rounded text-xs">Active</span>
+            {% else %}
+              <span class="px-2 py-1 bg-slate-100 text-slate-700 rounded text-xs">Inactive</span>
+            {% endif %}
+          </td>
+          <td class="px-4 py-2 text-right">
+            <a href="{% url 'funds:fund_portfolio' f.pk %}" class="text-sm text-slate-700 underline">Portfolio</a>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  {% else %}
+  <div class="px-4 py-6 text-center text-slate-500">No funds yet.</div>
+  {% endif %}
+</div>
+
+<!-- Pagination (if using paginator) -->
+{% if is_paginated %}
+<nav class="mt-4 flex items-center justify-between text-sm">
+  <span>Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</span>
+  <div class="flex gap-2">
+    {% if page_obj.has_previous %}
+      <a href="?page={{ page_obj.previous_page_number }}{% if request.GET.q %}&q={{ request.GET.q }}{% endif %}" class="underline">Previous</a>
+    {% endif %}
+    {% if page_obj.has_next %}
+      <a href="?page={{ page_obj.next_page_number }}{% if request.GET.q %}&q={{ request.GET.q }}{% endif %}" class="underline">Next</a>
+    {% endif %}
+  </div>
+</nav>
+{% endif %}
+{% endblock %}

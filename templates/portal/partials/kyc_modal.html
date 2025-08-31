@@ -1,0 +1,14 @@
+<div class="modal fade" id="modalKYC" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog"><form class="modal-content" onsubmit="Portal.submitKYC(event)">
+    <div class="modal-header"><h5 class="modal-title">Update KYC</h5><button class="btn-close" data-bs-dismiss="modal"></button></div>
+    <div class="modal-body">
+      <div class="row g-3">
+        <div class="col-md-6"><label class="form-label">Status</label><select name="kyc_status" class="form-select"><option>Pending</option><option>Compliant</option></select></div>
+        <div class="col-md-6"><label class="form-label">KYC Date</label><input name="kyc_date" type="date" class="form-control"></div>
+        <div class="col-12"><label class="form-label">Notes</label><textarea name="kyc_notes" class="form-control" rows="2"></textarea></div>
+      </div>
+      <div id="kyc-error" class="text-danger small d-none mt-2"></div>
+    </div>
+    <div class="modal-footer"><button class="btn btn-primary">Save</button></div>
+  </form></div>
+</div>

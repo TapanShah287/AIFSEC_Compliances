@@ -1,0 +1,53 @@
+<body class="bg-light"><div class="container py-4"><!doctype html><html><head>
+<!-- Added by automated fixer: Bootstrap 5 + meta -->
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-2dyVtHcYq4uW6GfBa6XJgkv1z0uM8sF+K2QGm0Cw8C0fM3Zf3Q8pQ0G3qE3rj1YL" crossorigin="anonymous">
+<link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
+</head>{% extends "base.html" %}
+{% block title %}Manager Entities{% endblock %}
+{% block content %}
+<h1 class="text-2xl font-semibold mb-6">Manager Entities</h1>
+<div class="mb-4 flex flex-wrap items-center gap-3">
+  <form method="get" class="flex items-center gap-2">
+    <input name="q" value="{{ request.GET.q }}" placeholder="Search managers..." class="px-3 py-2 border border-slate-300 rounded-lg text-sm">
+    <button class="px-3 py-2 rounded-lg text-sm bg-slate-800 text-white">Search</button>
+    {% if request.GET.q %}<a href="." class="text-sm text-slate-600 underline">Clear</a>{% endif %}
+  </form>
+  <a href="{% url 'manager_entities:manager_create' %}" class="ml-auto px-3 py-2 bg-indigo-600 text-white rounded-lg text-sm shadow">➕ Add Manager</a>
+</div>
+<div class="bg-white shadow rounded-lg overflow-hidden border border-slate-200">
+  <h2 class="text-sm font-semibold px-4 py-3 border-b bg-slate-50 text-slate-700 uppercase">Managers</h2>
+  {% if managers %}
+  <div class="overflow-x-auto">
+    <table class="min-w-full text-sm">
+      <thead class="bg-slate-100 text-slate-700 uppercase text-xs">
+        <tr>
+          <th class="px-4 py-2 text-left">Name</th>
+          <th class="px-4 py-2 text-left">SEBI Reg. No.</th>
+          <th class="px-4 py-2 text-left">PAN</th>
+          <th class="px-4 py-2 text-left">GSTIN</th>
+          <th class="px-4 py-2 text-right">Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for m in managers %}
+        <tr class="border-t hover:bg-slate-50">
+          <td class="px-4 py-2"><a class="text-indigo-700 hover:underline" href="{% url 'manager_entities:manager_detail' m.pk %}">{{ m.name }}</a></td>
+          <td class="px-4 py-2">{{ m.sebi_manager_registration_no|default:"—" }}</td>
+          <td class="px-4 py-2">{{ m.pan|default:"—" }}</td>
+          <td class="px-4 py-2">{{ m.gstin|default:"—" }}</td>
+          <td class="px-4 py-2 text-right"><a class="text-sm underline" href="{% url 'manager_entities:manager_update' m.pk %}">Edit</a></td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <div class="px-4 py-6 text-center text-slate-500">No Manager Entities yet.</div>
+  {% endif %}
+</div>
+{% endblock %}
+</div><!-- Added by automated fixer: Bootstrap JS -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-j1k2cbn6hQYQW3xw2VbX9kC9o7bT8o6yC5dYF6q0bYkI3yXl9hKxZ+o5uS7Jj9Lx" crossorigin="anonymous"></script>
+</body>

@@ -1,0 +1,95 @@
+{% extends 'base.html' %}
+{% block title %}Onboard Investor • AIF{% endblock %}
+
+{% block content %}
+<h1 class="text-3xl font-bold mb-6">Onboard Investor</h1>
+
+<form class="bg-white rounded-xl shadow p-6 max-w-3xl" onsubmit="return submitInvestor(event)">
+  <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+    <div>
+      <label class="block text-sm text-secondary mb-1">Name</label>
+      <input name="name" class="w-full border rounded-lg px-3 py-2" required>
+    </div>
+    <div>
+      <label class="block text-sm text-secondary mb-1">Email</label>
+      <input name="email" type="email" class="w-full border rounded-lg px-3 py-2">
+    </div>
+    <div>
+      <label class="block text-sm text-secondary mb-1">Phone</label>
+      <input name="phone" type="tel" class="w-full border rounded-lg px-3 py-2">
+    </div>
+    <div>
+      <label class="block text-sm text-secondary mb-1">Investor Type</label>
+      <!-- Backed by your INVESTOR_TYPES = SPONSOR/LP/OTHER -->
+      <select name="type" class="w-full border rounded-lg px-3 py-2" required>
+        <option value="SPONSOR">Sponsor / Manager</option>
+        <option value="LP">Limited Partner (Investor)</option>
+        <option value="OTHER">Other</option>
+      </select>
+    </div>
+    <div class="md:col-span-2">
+      <label class="block text-sm text-secondary mb-1">Address</label>
+      <input name="address" class="w-full border rounded-lg px-3 py-2">
+    </div>
+  </div>
+
+  <div id="inv-success" class="text-green-700 text-sm mt-3 hidden"></div>
+  <div id="inv-error" class="text-danger text-sm mt-3 hidden"></div>
+
+  <div class="mt-6 flex justify-end gap-3">
+    <a href="{% url 'portal-investors' %}" class="px-4 py-2 bg-gray-200 rounded-lg">Cancel</a>
+    <button class="px-4 py-2 bg-primary hover:bg-indigo-700 text-white rounded-lg">Create Investor</button>
+  </div>
+</form>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function getCSRFToken() {
+  const m = document.cookie.match(/(?:^|;)\s*csrftoken=([^;]+)/);
+  if (m) return decodeURIComponent(m[1]);
+  const meta = document.querySelector('meta[name="csrf-token"]');
+  return meta ? meta.content : '';
+}
+async function api(url, method='GET', body=null){
+  const opt = { method, credentials:'same-origin', headers:{'Content-Type':'application/json'} };
+  if(method !== 'GET'){ opt.headers['X-CSRFToken'] = getCSRFToken(); }
+  if(body){ opt.body = JSON.stringify(body); }
+  const res = await fetch(url, opt);
+  if(!res.ok) throw new Error((await res.text()) || res.statusText);
+  return res.json();
+}
+
+async function submitInvestor(e){
+  e.preventDefault();
+  const form = e.target;
+  const payload = Object.fromEntries(new FormData(form).entries());
+
+  // Trim inputs
+  ["name","email","phone","address"].forEach(k => { if(payload[k]) payload[k] = payload[k].trim(); });
+
+  // Normalize legacy types if needed
+  const map = { "INDIVIDUAL":"OTHER", "INSTITUTION":"LP" };
+  const t = (payload.type || "").toUpperCase();
+  payload.type = map[t] || t || "OTHER";
+
+  try{
+    const res = await api('/api/investors/', 'POST', payload);
+
+    // Optional: create empty KYC record on first onboard (keeps both pages aligned from day one)
+    try{
+      await api(`/api/investors/${res.id}/`, 'PATCH', { kyc: { kyc_status: false, investor_type: "IND" } });
+    }catch(_){}
+
+    document.getElementById('inv-success').textContent = "Investor created. Redirecting…";
+    document.getElementById('inv-success').classList.remove('hidden');
+    window.location.href = `/portal/investors/${res.id}/`;
+  }catch(err){
+    const el = document.getElementById('inv-error');
+    el.textContent = err.message;
+    el.classList.remove('hidden');
+  }
+  return false;
+}
+</script>
+{% endblock %}

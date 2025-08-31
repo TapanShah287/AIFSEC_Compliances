@@ -1,0 +1,201 @@
+<body class="bg-light"><div class="container py-4"><!doctype html><html><head>
+<!-- Added by automated fixer: Bootstrap 5 + meta -->
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-2dyVtHcYq4uW6GfBa6XJgkv1z0uM8sF+K2QGm0Cw8C0fM3Zf3Q8pQ0G3qE3rj1YL" crossorigin="anonymous">
+<link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
+</head>{% extends "base.html" %}
+{% block title %}Add {{ type }} Transaction{% endblock %}
+
+{% block content %}
+<div class="flex flex-wrap items-center justify-between gap-4 mb-6">
+    <h1 class="text-2xl font-semibold text-slate-800">Add {{ type }} Transaction for {{ fund.name }}</h1>
+    <div class="flex items-center gap-3">
+        <a href="{% url 'fund_detail' fund.pk %}" class="px-3 py-2 text-sm border rounded-lg hover:bg-slate-100 transition-colors">← Back to Fund</a>
+        <div class="inline-flex rounded-md shadow-sm border">
+            <a href="{% url 'add_purchase' fund.pk %}"
+               class="px-3 py-2 text-sm {% if type == 'Purchase' %}bg-slate-800 text-white font-semibold{% else %}bg-white hover:bg-slate-50{% endif %} rounded-l-md transition-colors">Purchase</a>
+            <a href="{% url 'add_redemption' fund.pk %}"
+               class="px-3 py-2 text-sm {% if type == 'Redemption' %}bg-slate-800 text-white font-semibold{% else %}bg-white hover:bg-slate-50{% endif %} rounded-r-md transition-colors">Redemption</a>
+        </div>
+    </div>
+</div>
+
+<form method="post" id="transactionForm" class="bg-white shadow-lg rounded-xl p-6 border border-slate-200"
+      data-share-types-url="{% url 'transactions:ajax_load_share_types' %}"
+      data-face-value-url="{% url 'transactions:ajax_get_face_value' %}">
+    {% csrf_token %}
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4">
+        
+        <div>
+            <label for="id_investee_company" class="block text-sm font-medium text-gray-700">Investee Company</label>
+            {{ form.investee_company }}
+        </div>
+        <div>
+            <label for="id_share_capital" class="block text-sm font-medium text-gray-700">Share Type</label>
+            {{ form.share_capital }}
+        </div>
+        <div>
+            <label for="id_quantity" class="block text-sm font-medium text-gray-700">Quantity</label>
+            {{ form.quantity }}
+        </div>
+
+        {% if type == 'Purchase' %}
+            <div>
+                <label for="id_purchase_rate" class="block text-sm font-medium text-gray-700">Purchase Rate</label>
+                {{ form.purchase_rate }}
+            </div>
+            <div>
+                <label for="id_face_value" class="block text-sm font-medium text-gray-700">Face Value (auto-filled)</label>
+                {{ form.face_value }}
+            </div>
+            <div>
+                <label for="id_purchase_date" class="block text-sm font-medium text-gray-700">Purchase Date</label>
+                {{ form.purchase_date }}
+            </div>
+        {% else %} {# Redemption #}
+            <div>
+                <label for="id_redemption_rate" class="block text-sm font-medium text-gray-700">Redemption Rate</label>
+                {{ form.redemption_rate }}
+            </div>
+            <div>
+                <label for="id_redemption_date" class="block text-sm font-medium text-gray-700">Redemption Date</label>
+                {{ form.redemption_date }}
+            </div>
+        {% endif %}
+
+        <div class="md:col-span-2">
+            <details class="border rounded-md">
+                <summary class="cursor-pointer font-medium p-3 text-sm text-slate-700">More options (fees, taxes, currency, etc.)</summary>
+                <div class="p-4 border-t grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div>
+                        <label for="id_fees" class="block text-sm font-medium text-gray-700">Fees</label>
+                        {{ form.fees }}
+                    </div>
+                    <div>
+                        <label for="id_taxes" class="block text-sm font-medium text-gray-700">Taxes</label>
+                        {{ form.taxes }}
+                    </div>
+                    <div>
+                        <label for="id_currency" class="block text-sm font-medium text-gray-700">Currency</label>
+                        {{ form.currency }}
+                    </div>
+                    <div>
+                        <label for="id_fx_rate" class="block text-sm font-medium text-gray-700">FX Rate</label>
+                        {{ form.fx_rate }}
+                    </div>
+                    <div>
+                        <label for="id_status" class="block text-sm font-medium text-gray-700">Status</label>
+                        {{ form.status }}
+                    </div>
+                    <div>
+                        <label for="id_external_ref" class="block text-sm font-medium text-gray-700">External Ref</label>
+                        {{ form.external_ref }}
+                    </div>
+                    <div class="md:col-span-3">
+                        <label for="id_notes" class="block text-sm font-medium text-gray-700">Notes</label>
+                        {{ form.notes }}
+                    </div>
+                </div>
+            </details>
+        </div>
+
+        <div class="md:col-span-2 border-t pt-4 mt-4 space-y-1">
+            <p class="text-sm text-slate-600 flex justify-between">Gross Amount: <span id="grossAmount" class="font-semibold text-slate-800">₹0.00</span></p>
+            <p class="text-sm text-slate-600 flex justify-between">Net Amount (incl. fees + taxes): <span id="netAmount" class="font-semibold text-slate-800">₹0.00</span></p>
+        </div>
+    </div>
+
+    <div class="mt-8 pt-4 border-t">
+        <button type="submit" class="px-5 py-2 rounded-lg bg-slate-800 text-white font-semibold hover:bg-slate-900 transition-colors">Save {{ type }}</button>
+    </div>
+</form>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const form = document.getElementById('transactionForm');
+    
+    // --- Element Selectors ---
+    // Ensure these IDs match the 'id' attributes of your form fields
+    const companyField = document.getElementById('id_investee_company');
+    const shareField = document.getElementById('id_share_capital'); // Corresponds to form.share_capital
+    const faceValueField = document.getElementById('id_face_value');
+    const qtyField = document.getElementById('id_quantity');
+    const rateField = document.getElementById('id_purchase_rate') || document.getElementById('id_redemption_rate');
+    const feesField = document.getElementById('id_fees');
+    const taxesField = document.getElementById('id_taxes');
+    const grossEl = document.getElementById('grossAmount');
+    const netEl = document.getElementById('netAmount');
+
+    // --- URLS from data attributes ---
+    const loadShareTypesUrl = form.dataset.shareTypesUrl;
+    const faceValueUrl = form.dataset.faceValueUrl;
+
+    // --- Totals Calculation ---
+    function formatINR(num) {
+        return '₹' + (Number(num || 0)).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    }
+
+    function updateTotals() {
+        const q = parseFloat(qtyField?.value || 0);
+        const r = parseFloat(rateField?.value || 0);
+        const f = parseFloat(feesField?.value || 0);
+        const t = parseFloat(taxesField?.value || 0);
+        const gross = q * r;
+        const net = gross + f + t;
+        if (grossEl) grossEl.textContent = formatINR(gross);
+        if (netEl) netEl.textContent = formatINR(net);
+    }
+
+    // --- Event Listeners ---
+    [qtyField, rateField, feesField, taxesField].forEach(field => {
+        if (field) field.addEventListener('input', updateTotals);
+    });
+    updateTotals(); // Initial calculation
+
+    // 1. Load share types when company changes
+    if (companyField && shareField) {
+        companyField.addEventListener('change', function() {
+            const companyId = this.value;
+            shareField.innerHTML = '<option>Loading…</option>';
+            if (!companyId) {
+                shareField.innerHTML = '<option value="">---------</option>';
+                return;
+            }
+            
+            fetch(`${loadShareTypesUrl}?investee_company=${companyId}`)
+                .then(response => response.text())
+                .then(html => {
+                    shareField.innerHTML = html;
+                    // Trigger change event on shareField to clear/update face value
+                    shareField.dispatchEvent(new Event('change'));
+                });
+        });
+    }
+
+    // 2. Load face value when share type changes (for Purchases only)
+    if (faceValueField && shareField) {
+        shareField.addEventListener('change', function() {
+            const shareId = this.value;
+            if (!shareId) {
+                faceValueField.value = '';
+                return;
+            }
+            // Ensure the parameter name is 'share_capital_id'
+            fetch(`${faceValueUrl}?share_capital_id=${shareId}`)
+                .then(response => response.json())
+                .then(data => {
+                    if (faceValueField) {
+                        faceValueField.value = data.face_value;
+                    }
+                });
+        });
+    }
+});
+</script>
+{% endblock %}</div><!-- Added by automated fixer: Bootstrap JS -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-j1k2cbn6hQYQW3xw2VbX9kC9o7bT8o6yC5dYF6q0bYkI3yXl9hKxZ+o5uS7Jj9Lx" crossorigin="anonymous"></script>
+</body>

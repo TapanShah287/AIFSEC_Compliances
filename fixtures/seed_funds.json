@@ -1,0 +1,11 @@
+[
+  {
+    "model": "funds.fund",
+    "pk": 1,
+    "fields": {
+      "name": "FinsoKart Growth Fund I",
+      "category": "CAT_II",
+      "corpus": "1000000000.00"
+    }
+  }
+]

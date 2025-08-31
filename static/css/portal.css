@@ -1,0 +1,12 @@
+
+:root{--brand-grad:linear-gradient(135deg,#6ea8fe,#e2afff 70%);}
+.brand-logo{width:34px;height:34px;border-radius:.5rem;background:var(--brand-grad);color:#0b1020;display:inline-grid;place-items:center;font-weight:800}
+.card-kpi{background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.08)}
+.kpi-sub{color:#a7b3cf;font-size:.8rem}
+.table thead th{position:sticky;top:0;background:rgba(255,255,255,.05);backdrop-filter:blur(8px)}
+.badge-soft{background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.12)}
+.actionbar{display:flex;gap:.5rem;flex-wrap:wrap}
+.btn-icon{display:inline-flex;align-items:center;gap:.4rem}
+.timeline{border-left:2px solid rgba(255,255,255,.1);padding-left:1rem}
+.timeline .item{position:relative;margin-bottom:1rem}
+.timeline .item::before{content:"";width:.75rem;height:.75rem;border-radius:50%;background:#6ea8fe;position:absolute;left:-.45rem;top:.15rem}

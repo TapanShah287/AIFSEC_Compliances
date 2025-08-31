@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+{% block title %}Add Shareholding for {{ company.name }}{% endblock %}
+
+{% block content %}
+<a href="{% url 'portal-company-detail' company.pk %}" class="inline-block mb-4 px-3 py-1.5 border rounded-lg">&larr; Back to Company</a>
+
+<div class="bg-white rounded-xl shadow p-6">
+  <h1 class="text-2xl font-semibold mb-4">Add Shareholding for {{ company.name }}</h1>
+  <form method="post" novalidate>
+    {% csrf_token %}
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <div>
+        <label class="block text-sm text-secondary mb-1">Investor</label>
+        {{ form.investor }}
+        <p class="text-xs text-secondary mt-1">Pick an Investor record, or type a holder name below.</p>
+      </div>
+
+      <div>
+        <label class="block text-sm text-secondary mb-1">Holder name</label>
+        {{ form.holder_name }}
+        <p class="text-xs text-secondary mt-1">If not linked to an Investor record.</p>
+      </div>
+
+      <div>
+        <label class="block text-sm text-secondary mb-1">Share type</label>
+        {{ form.share_type }}
+      </div>
+
+      <div>
+        <label class="block text-sm text-secondary mb-1">Number of shares</label>
+        {{ form.number_of_shares }}
+      </div>
+
+      {{ form.investee_company }} {# hidden/readonly; set in view #}
+    </div>
+
+    <div class="mt-6">
+      <button class="px-4 py-2 rounded-lg bg-indigo-600 text-white hover:bg-indigo-700" type="submit">Save</button>
+    </div>
+  </form>
+</div>
+{% endblock %}

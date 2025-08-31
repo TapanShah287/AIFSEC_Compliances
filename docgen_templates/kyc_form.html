@@ -1,0 +1,13 @@
+<!doctype html>
+<html>
+  <head><meta charset="utf-8"><title>KYC Form</title></head>
+  <body>
+    <h1>KYC Form — {{ investor.name }}</h1>
+    <p><b>Investor Type:</b> {{ investor.investor_type }}</p>
+    <p><b>PAN:</b> {{ investor.pan }}</p>
+    <p><b>Email:</b> {{ investor.contact_email }}</p>
+    <p><b>Address:</b> {{ investor.address or "-" }}</p>
+    <hr>
+    <p>Date: {{ today }}</p>
+  </body>
+</html>

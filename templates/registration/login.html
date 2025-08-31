@@ -1,0 +1,20 @@
+{% extends 'base.html' %}{% block title %}Login • AIF{% endblock %}
+{% block content %}
+<div class="flex items-center justify-center min-h-[70vh]">
+  <form method="post" class="bg-white rounded-xl shadow p-8 w-full max-w-md">
+    {% csrf_token %}
+    <h1 class="text-2xl font-bold mb-6">Sign in</h1>
+    <div class="space-y-4">
+      <div>
+        <label class="block text-sm text-secondary mb-1" for="id_username">Username</label>
+        <input id="id_username" name="username" class="w-full border rounded-lg px-3 py-2" required>
+      </div>
+      <div>
+        <label class="block text-sm text-secondary mb-1" for="id_password">Password</label>
+        <input id="id_password" name="password" type="password" class="w-full border rounded-lg px-3 py-2" required>
+      </div>
+    </div>
+    <button class="mt-6 w-full px-4 py-2 bg-primary hover:bg-indigo-700 text-white rounded-lg">Login</button>
+  </form>
+</div>
+{% endblock %}

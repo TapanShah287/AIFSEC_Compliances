@@ -1,0 +1,30 @@
+{% extends 'base.html' %}{% block title %}Compliance • AIF{% endblock %}
+{% block content %}
+<h1 class="text-3xl font-bold mb-6">Compliance Tasks</h1>
+<div class="bg-white rounded-xl shadow overflow-hidden">
+  <div class="overflow-x-auto">
+    <table class="min-w-full text-sm">
+      <thead class="bg-gray-100 text-secondary uppercase">
+        <tr><th class="px-6 py-3 text-left">Task</th><th class="px-6 py-3 text-left">Entity</th><th class="px-6 py-3 text-left">Status</th><th class="px-6 py-3 text-right">Due</th></tr>
+      </thead>
+      <tbody id="task-body" class="divide-y"></tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}
+{% block scripts %}
+<script>
+(async function(){
+  const data = await api('/api/compliance/tasks/').catch(()=>[]);
+  const tb = document.getElementById('task-body');
+  (data.results??data).forEach(t=>{
+    const tr=document.createElement('tr'); tr.className='hover:bg-gray-50';
+    tr.innerHTML = `<td class="px-6 py-3">${t.title||t.name}</td>
+      <td class="px-6 py-3">${t.entity_type||''} ${t.entity_id||''}</td>
+      <td class="px-6 py-3"><span class="px-2 py-1 rounded-full text-xs ${t.completed?'bg-success/20 text-success':'bg-danger/20 text-danger'}">${t.completed?'Done':'Open'}</span></td>
+      <td class="px-6 py-3 text-right">${t.due_date||''}</td>`;
+    tb.appendChild(tr);
+  });
+})()
+</script>
+{% endblock %}

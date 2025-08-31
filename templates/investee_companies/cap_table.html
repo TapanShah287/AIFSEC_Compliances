@@ -1,0 +1,63 @@
+{% extends 'base.html' %}
+{% load dict_extras %}
+{% block title %}Cap Table – {{ company.name }}{% endblock %}
+{% block content %}
+<div class="flex justify-between items-center mb-6">
+  <div>
+    <h1 class="text-2xl font-semibold">Cap Table</h1>
+    <p class="text-sm text-slate-500">for {{ company.name }}</p>
+  </div>
+  <div class="flex gap-2">
+    <a href="?export=csv" class="btn btn-outline-secondary btn-sm">Export CSV</a>
+    <a href="{% url 'investee_companies:investee_company_detail' company.id %}" class="btn btn-light btn-sm">← Back</a>
+  </div>
+</div>
+
+{% if grouped %}
+  {% for s_type, rows in grouped.items %}
+  <div class="mb-6" data-class="{{ s_type }}">
+    <h2 class="text-lg font-semibold mb-2">{{ type_labels|get_item:s_type|default:s_type }} – Class Summary</h2>
+    <div class="bg-white shadow rounded-lg overflow-hidden border border-slate-200">
+      <table class="min-w-full text-sm">
+        <thead class="bg-slate-100 text-slate-700 uppercase text-xs">
+          <tr>
+            <th class="px-4 py-2 text-left">Shareholder</th>
+            <th class="px-4 py-2 text-right">Shares</th>
+            <th class="px-4 py-2 text-right">% of Class</th>
+            <th class="px-4 py-2 text-right">% of Total</th>
+            <th class="px-4 py-2 text-right">Face Value (₹)</th>
+            <th class="px-4 py-2 text-right">Total Face (₹)</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for r in rows %}
+          <tr class="border-t hover:bg-slate-50">
+            <td class="px-4 py-2">{{ r.holder }}</td>
+            <td class="px-4 py-2 text-right">{{ r.number_of_shares|floatformat:0 }}</td>
+            <td class="px-4 py-2 text-right">{{ r.percent_of_class|floatformat:2 }}%</td>
+            <td class="px-4 py-2 text-right">{{ r.percent_of_total|floatformat:2 }}%</td>
+            <td class="px-4 py-2 text-right">{{ r.face_value|default:0|floatformat:2 }}</td>
+            <td class="px-4 py-2 text-right">{{ r.total_face_value|floatformat:2 }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+        <tfoot class="bg-slate-200 font-bold text-slate-900">
+          <tr>
+            <td class="px-4 py-2 text-left">Total ({{ type_labels|get_item:s_type|default:s_type }})</td>
+            <td class="px-4 py-2 text-right">{{ totals_by_type|get_item:s_type|floatformat:0 }}</td>
+            <td class="px-4 py-2 text-right">100.00%</td>
+            <td class="px-4 py-2 text-right">—</td>
+            <td class="px-4 py-2 text-right">—</td>
+            <td class="px-4 py-2 text-right">—</td>
+          </tr>
+        </tfoot>
+      </table>
+    </div>
+  </div>
+  {% endfor %}
+
+  <div class="text-sm text-slate-600">Grand total shares (all classes): <strong>{{ grand_total_shares|floatformat:0 }}</strong></div>
+{% else %}
+  <p>No shareholdings yet.</p>
+{% endif %}
+{% endblock %}
