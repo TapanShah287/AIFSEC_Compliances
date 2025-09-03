@@ -1,4 +1,4 @@
 from django.apps import AppConfig
 
 class CompliancesConfig(AppConfig):
-    name = 'aif_compliance.compliances'
+    name = 'compliances'
