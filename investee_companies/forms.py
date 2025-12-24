@@ -1,112 +1,90 @@
-# investee_companies/forms.py
 from django import forms
-from datetime import date
-from django.forms import inlineformset_factory
-from .models import (
-    InvesteeCompany, ValuationReport, ShareValuation,
-    CorporateAction, CompanyFinancials, Shareholding
-)
+from django.forms import modelformset_factory
+from .models import InvesteeCompany, Shareholding, ValuationReport, ShareValuation, ShareCapital
+
+
+# Global style: Changed bg-slate-50 to bg-white for better contrast
+INPUT_STYLE = 'w-full px-4 py-2 bg-white border border-slate-200 rounded-lg focus:ring-2 focus:ring-indigo-500/20 outline-none transition-all'
 
 class InvesteeCompanyForm(forms.ModelForm):
+    """Form for creating or updating an investee company."""
     class Meta:
         model = InvesteeCompany
-        fields = ['name', 'cin', 'incorporation_date']
+        fields = ['name', 'cin', 'sector', 'incorporation_date']
         widgets = {
-            'incorporation_date': forms.DateInput(attrs={'type': 'date'}),
+            'name': forms.TextInput(attrs={'class': INPUT_STYLE, 'placeholder': 'Legal Entity Name'}),
+            'cin': forms.TextInput(attrs={'class': INPUT_STYLE, 'placeholder': 'CIN Number'}),
+            'sector': forms.TextInput(attrs={'class': INPUT_STYLE, 'placeholder': 'e.g. Fintech'}),
+            'incorporation_date': forms.DateInput(attrs={'class': INPUT_STYLE, 'type': 'date'}),
         }
 
+class ShareCapitalForm(forms.ModelForm):
+    """
+    Form to define a share class (Equity, Series A, etc.).
+    FIXED: Added 'issued_shares' to allow editing Paid-up Units.
+    """
+    class Meta:
+        model = ShareCapital
+        fields = ['share_type', 'class_name', 'face_value', 'issued_shares', 'authorized_capital', 'as_on_date']
+        widgets = {
+            'share_type': forms.Select(attrs={'class': INPUT_STYLE}),
+            'class_name': forms.TextInput(attrs={'class': INPUT_STYLE, 'placeholder': 'e.g. Series A'}),
+            'face_value': forms.NumberInput(attrs={'class': INPUT_STYLE, 'placeholder': '10.00'}),
+            'issued_shares': forms.NumberInput(attrs={'class': INPUT_STYLE, 'placeholder': 'Paid-up Units'}),
+            'authorized_capital': forms.NumberInput(attrs={'class': INPUT_STYLE, 'placeholder': 'Total INR'}),
+            'as_on_date': forms.DateInput(attrs={'class': INPUT_STYLE, 'type': 'date'}),
+        }
+
+# Formset for managing multiple share classes (Add/Edit/Delete)
+ShareCapitalFormSet = modelformset_factory(
+    ShareCapital,
+    form=ShareCapitalForm,
+    extra=1, 
+    can_delete=True
+)
+
+class ShareholdingForm(forms.ModelForm):
+    """
+    Form for adding specific shareholder records to the Cap Table.
+    Requirements:
+    1. Filter instrument selection to the company.
+    2. Support for linking to internal Investor registry or manual name.
+    """
+    class Meta:
+        model = Shareholding
+        fields = ['investor', 'holder_name', 'share_capital', 'number_of_shares']
+        widgets = {
+            'investor': forms.Select(attrs={'class': INPUT_STYLE}),
+            'holder_name': forms.TextInput(attrs={'class': INPUT_STYLE, 'placeholder': 'Optional: Manual holder name'}),
+            'share_capital': forms.Select(attrs={'class': INPUT_STYLE}),
+            'number_of_shares': forms.NumberInput(attrs={'class': INPUT_STYLE}),
+        }
+
+    def __init__(self, *args, **kwargs):
+        company = kwargs.pop('company', None)
+        super().__init__(*args, **kwargs)
+        if company:
+            self.fields['share_capital'].queryset = ShareCapital.objects.filter(investee_company=company)
+
 class ValuationReportForm(forms.ModelForm):
+    """
+    FIXED: Removed 'methodology' field as it is not in the ValuationReport model.
+    """
     class Meta:
         model = ValuationReport
         fields = ['valuation_date', 'report_file']
         widgets = {
-            'valuation_date': forms.DateInput(attrs={'type': 'date'}),
+            'valuation_date': forms.DateInput(attrs={'class': INPUT_STYLE, 'type': 'date'}),
+            'report_file': forms.FileInput(attrs={'class': 'text-sm'}),
         }
 
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        # Make the report file field not required
-        self.fields['report_file'].required = False
-
-
-class ShareValuationForm(forms.ModelForm):
-    class Meta:
-        model = ShareValuation
-        fields = ["valuation_report", "share_capital", "per_share_value"]
-        widgets = {
-            "per_share_value": forms.NumberInput(attrs={"step": "0.01", "min": "0"})
-        }
-        labels = {
-            "valuation_report": "Valuation report",
-            "share_capital": "Share capital (class)",
-            "per_share_value": "Per share value",
-        }
-
-    def __init__(self, *args, **kwargs):
-        company = kwargs.pop("company", None)  # passed in from the view
-        super().__init__(*args, **kwargs)
-
-        if company is not None:
-            # ✅ filter by the correct FK name on both models
-            self.fields["valuation_report"].queryset = (
-                ValuationReport.objects.filter(investee_company=company).order_by("-valuation_date")
-            )
-            self.fields["share_capital"].queryset = (
-                Shareholding.objects.filter(investee_company=company).order_by("share_type")
-            )
-
-        # Optional: basic styling
-        for name in ("valuation_report", "share_capital", "per_share_value"):
-            self.fields[name].widget.attrs.setdefault("class", "w-full")
-
-class CorporateActionForm(forms.ModelForm):
-    class Meta:
-        model = CorporateAction
-        fields = ['action_type', 'action_date', 'details', 'share_type', 'ratio', 'from_share_type', 'to_share_type', 'number_of_shares_converted']
-        widgets = {
-            'action_date': forms.DateInput(attrs={'type': 'date'}),
-        }
-
-class CompanyFinancialsForm(forms.ModelForm):
-    class Meta:
-        model = CompanyFinancials
-        fields = ['period_date', 'revenue', 'ebitda', 'net_income']
-        widgets = {
-            'period_date': forms.DateInput(attrs={'type': 'date'}),
-        }
-
-class ShareholdingForm(forms.ModelForm):
-    class Meta:
-        model = Shareholding
-        fields = ['investee_company','investor','holder_name','share_type','number_of_shares','face_value','acquisition_price','acquisition_date','certificate_or_demat']
-        widgets = {
-            'acquisition_date': forms.DateInput(attrs={'type':'date'}),
-        }
-
-
-class ShareholdingPatternForm(forms.ModelForm):
-    """
-    Minimal company shareholding pattern entry:
-    - Who holds
-    - What class
-    - How many shares
-    """
-    class Meta:
-        model = Shareholding
-        fields = [
-            "investee_company",   # FK (pre-filled by the view)
-            "investor",           # optional FK to an Investor
-            "holder_name",        # fallback text if no investor FK
-            "share_type",         # Equity / Preference / ...
-            "number_of_shares",   # integer/decimal as per model
-        ]
-        widgets = {
-            "investee_company": forms.Select(attrs={"class": "hidden"}),  # we’ll set instance in the view
-        }
-
-    def clean(self):
-        data = super().clean()
-        # ensure at least one of investor or holder_name is provided
-        if not data.get("investor") and not data.get("holder_name"):
-            self.add_error("holder_name", "Provide either an Investor or a Holder name.")
-        return data
+# Formset for handling per-share valuations for multiple classes
+ShareValuationFormSet = modelformset_factory(
+    ShareValuation,
+    fields=('share_capital', 'per_share_value'),
+    extra=0,
+    widgets={
+        'share_capital': forms.HiddenInput(),
+        'per_share_value': forms.NumberInput(attrs={'class': INPUT_STYLE, 'placeholder': '0.00'}),
+    }
+)

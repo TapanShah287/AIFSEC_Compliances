@@ -1,11 +1,9 @@
-from django.urls import path, include
-from rest_framework.routers import DefaultRouter
-from .views import InvestorCommitmentViewSet
+from django.urls import path
+from . import views
 
-router = DefaultRouter()
-router.register(r"commitments", InvestorCommitmentViewSet, basename="commitment")
+app_name = 'transactions'
 
 urlpatterns = [
-    # API routes
-    path("", include(router.urls)),
+    path('fund/<int:fund_pk>/purchase/add/', views.add_purchase, name='add_purchase'),
+    path('fund/<int:fund_pk>/redemption/add/', views.add_redemption, name='add_redemption'),
 ]

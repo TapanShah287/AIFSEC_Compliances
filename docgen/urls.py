@@ -1,8 +1,14 @@
-from django.urls import path
+from django.urls import path, include
+from rest_framework.routers import DefaultRouter
 from . import views
 
-app_name = "docgen"
+router = DefaultRouter()
+router.register(r'templates', views.DocumentTemplateViewSet, basename='template')
+
 urlpatterns = [
-    path("kyc/<int:investor_id>/", views.generate_kyc_for_investor, name="generate-kyc"),
-    path("commitment/<int:commitment_id>/", views.generate_commitment_agreement, name="generate-commitment"),
+    path('', include(router.urls)),
+    
+    # RPC Style generation endpoints
+    path('generate/kyc/<int:investor_id>/', views.generate_kyc_document, name='generate-kyc'),
+    path('generate/commitment/<int:commitment_id>/', views.generate_commitment_letter, name='generate-commitment'),
 ]

@@ -1,71 +1,38 @@
-from transactions.models import InvestorCommitment
 # investors/forms.py
 from django import forms
-from .models import (
-    KYCStatus, FATCADeclaration, Document, Investor,
-    CommunicationLog, InvestorBankAccount
-)
-from funds.models import Fund
+from .models import Investor, InvestorDocument
 
-class KYCForm(forms.ModelForm):
-    class Meta:
-        model = KYCStatus
-        fields = ['kyc_status', 'investor_type', 'date_completed', 'notes']
-        widgets = {
-            'date_completed': forms.DateInput(attrs={'type': 'date'}),
-        }
-
-class FATCAForm(forms.ModelForm):
-    class Meta:
-        model = FATCADeclaration
-        fields = ['declaration_status', 'is_us_person', 'date_submitted']
-        widgets = {
-            'date_submitted': forms.DateInput(attrs={'type': 'date'}),
-        }
-
-class IndividualDocumentForm(forms.ModelForm):
-    title = forms.CharField(max_length=255, required=True)
-    file = forms.FileField(required=True)
-    class Meta:
-        model = Document
-        fields = ['title', 'file']
-
-class NonIndividualDocumentForm(forms.ModelForm):
-    DOCUMENT_CHOICES = [
-        ('COI', 'Certificate of Incorporation'),
-        ('AOA', 'Articles of Association (AOA)'),
-        ('MOA', 'Memorandum of Association (MOA)'),
-        ('PR', 'Partnership Resolution'),
-        ('TR', 'Trust Resolution'),
-        ('BR', 'Board Resolution'),
-    ]
-    title = forms.ChoiceField(choices=DOCUMENT_CHOICES)
-    file = forms.FileField(required=True)
-    class Meta:
-        model = Document
-        fields = ['title', 'file']
-
-class InvestorCommitmentForm(forms.ModelForm):
-    fund = forms.ModelChoiceField(queryset=Fund.objects.all(), required=True, label="Fund")
-    class Meta:
-        model = InvestorCommitment
-        fields = ["fund", "amount_committed"]
-        labels = { "amount_committed": "Commitment Amount (₹)" }
+# Consistent Portal UI Styling
+STYLE = {'class': 'w-full px-4 py-2 bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500/20 outline-none transition-all'}
 
 class InvestorForm(forms.ModelForm):
     class Meta:
         model = Investor
-        fields = ["name", "email", "phone", "type"]
-
-class CommunicationLogForm(forms.ModelForm):
-    class Meta:
-        model = CommunicationLog
-        fields = ['communication_date', 'communication_type', 'notes']
+        fields = [
+            'name', 'investor_type', 'email', 'phone', 'pan', 
+            'demat_account_no', 'dp_id', 'accreditation_status', 
+            'accreditation_expiry', 'kyc_status', 'risk_appetite'
+        ]
         widgets = {
-            'communication_date': forms.DateInput(attrs={'type': 'date'}),
+            'name': forms.TextInput(attrs={'placeholder': 'Full Legal Name', **STYLE}),
+            'investor_type': forms.Select(attrs=STYLE),
+            'email': forms.EmailInput(attrs={'placeholder': 'Email Address', **STYLE}),
+            'phone': forms.TextInput(attrs={'placeholder': '+91 ...', **STYLE}),
+            'pan': forms.TextInput(attrs={'placeholder': 'ABCDE1234F', **STYLE}),
+            'demat_account_no': forms.TextInput(attrs={'placeholder': '16-digit Client ID', **STYLE}),
+            'dp_id': forms.TextInput(attrs={'placeholder': 'IN30...', **STYLE}),
+            'accreditation_status': forms.Select(attrs=STYLE),
+            'accreditation_expiry': forms.DateInput(attrs={'type': 'date', **STYLE}),
+            'kyc_status': forms.Select(attrs=STYLE),
+            'risk_appetite': forms.Select(attrs=STYLE),
         }
 
-class InvestorBankAccountForm(forms.ModelForm):
+class InvestorDocumentForm(forms.ModelForm):
     class Meta:
-        model = InvestorBankAccount
-        fields = ['bank_name', 'account_number', 'ifsc_code', 'is_primary']
+        model = InvestorDocument
+        fields = ['doc_type', 'file', 'notes']
+        widgets = {
+            'doc_type': forms.Select(attrs=STYLE),
+            'notes': forms.Textarea(attrs={'rows': 2, 'placeholder': 'Optional internal notes...', **STYLE}),
+            'file': forms.FileInput(attrs={'class': 'block w-full text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100'}),
+        }

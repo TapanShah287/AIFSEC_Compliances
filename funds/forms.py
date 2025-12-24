@@ -1,98 +1,64 @@
-# funds/forms.py
 from django import forms
-from .models import Fund, Document
+from .models import Fund, Document, StewardshipEngagement, NavSnapshot
 from investors.models import Investor
-# Import the transaction models that these forms will create
-from transactions.models import InvestorCommitment, CapitalCall
+from investee_companies.models import InvesteeCompany
 
-# Common styling attributes for form widgets
-form_widget_attrs = {
-    'class': 'w-full p-2 border border-slate-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500'
-}
+# UI Helper
+INPUT_STYLE = 'w-full px-4 py-2 bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500/20 outline-none transition-all'
 
 class FundForm(forms.ModelForm):
     class Meta:
         model = Fund
-        fields = ['name', 'sebi_registration_number', 'category', 'corpus', 'date_of_inception', 'manager']
+        fields = [
+            'name', 'jurisdiction', 'scheme_type', 'currency', 'parent_fund', 
+            'sebi_registration_number', 'category', 'corpus', 
+            'sponsor_commitment', 'date_of_inception', 'manager'
+        ]
         widgets = {
-            'name': forms.TextInput(attrs=form_widget_attrs),
-            'sebi_registration_number': forms.TextInput(attrs=form_widget_attrs),
-            'category': forms.Select(attrs=form_widget_attrs),
-            'corpus': forms.NumberInput(attrs=form_widget_attrs),
-            'date_of_inception': forms.DateInput(attrs={'type': 'date', **form_widget_attrs}),
-            'manager': forms.Select(attrs=form_widget_attrs),
+            'name': forms.TextInput(attrs={'class': INPUT_STYLE, 'placeholder': 'Fund Name'}),
+            'jurisdiction': forms.Select(attrs={'class': INPUT_STYLE}),
+            'scheme_type': forms.Select(attrs={'class': INPUT_STYLE}),
+            'currency': forms.Select(attrs={'class': INPUT_STYLE}),
+            'parent_fund': forms.Select(attrs={'class': INPUT_STYLE}),
+            'sebi_registration_number': forms.TextInput(attrs={'class': INPUT_STYLE}),
+            'category': forms.Select(attrs={'class': INPUT_STYLE}),
+            'corpus': forms.NumberInput(attrs={'class': INPUT_STYLE}),
+            'sponsor_commitment': forms.NumberInput(attrs={'class': INPUT_STYLE}),
+            'date_of_inception': forms.DateInput(attrs={'class': INPUT_STYLE, 'type': 'date'}),
+            'manager': forms.Select(attrs={'class': INPUT_STYLE}),
         }
 
 class DocumentForm(forms.ModelForm):
     class Meta:
         model = Document
-        fields = ['title', 'file', 'investor']
+        fields = ['investor', 'title', 'file', 'is_demat_advice']
         widgets = {
-            'title': forms.TextInput(attrs=form_widget_attrs),
-            'file': forms.FileInput(attrs={'class': 'w-full'}),
-            'investor': forms.Select(attrs=form_widget_attrs),
+            'investor': forms.Select(attrs={'class': INPUT_STYLE}),
+            'title': forms.TextInput(attrs={'class': INPUT_STYLE, 'placeholder': 'Document Title'}),
+            'file': forms.FileInput(attrs={'class': 'block w-full text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100'}),
+            'is_demat_advice': forms.CheckboxInput(attrs={'class': 'w-5 h-5 rounded text-indigo-600 focus:ring-indigo-500'}),
         }
 
-    def __init__(self, *args, **kwargs):
-        self.fund = kwargs.pop('fund', None)
-        super().__init__(*args, **kwargs)
-        if self.fund:
-            committed_investor_ids = self.fund.commitments.values_list('investor_id', flat=True)
-            self.fields['investor'].queryset = Investor.objects.filter(id__in=committed_investor_ids)
-        else:
-            self.fields['investor'].queryset = Investor.objects.none()
-
-# --- RESTORED FORMS ---
-
-class FundCommitmentForm(forms.ModelForm):
-    """
-    Form for adding an investor's commitment to a specific fund.
-    This form lives in the 'funds' app for UI purposes but acts on a 'transactions' model.
-    """
+class StewardshipEngagementForm(forms.ModelForm):
     class Meta:
-        model = InvestorCommitment
-        # Note: 'commitment_date' and 'fund' will be set in the view.
-        fields = ['investor', 'amount_committed']
+        model = StewardshipEngagement
+        fields = ['investee_company', 'engagement_date', 'topic', 'description', 'status']
         widgets = {
-            'investor': forms.Select(attrs=form_widget_attrs),
-            'amount_committed': forms.NumberInput(attrs=form_widget_attrs),
+            'investee_company': forms.Select(attrs={'class': INPUT_STYLE}),
+            'engagement_date': forms.DateInput(attrs={'class': INPUT_STYLE, 'type': 'date'}),
+            'topic': forms.TextInput(attrs={'class': INPUT_STYLE}),
+            'description': forms.Textarea(attrs={'class': INPUT_STYLE, 'rows': 3}),
+            'status': forms.Select(attrs={'class': INPUT_STYLE}),
         }
 
-    def __init__(self, *args, **kwargs):
-        self.fund = kwargs.pop('fund', None)
-        super().__init__(*args, **kwargs)
-
-    def clean(self):
-        cleaned_data = super().clean()
-        investor = cleaned_data.get('investor')
-        
-        if self.fund and investor:
-            if InvestorCommitment.objects.filter(fund=self.fund, investor=investor).exists():
-                self.add_error('investor', f"{investor.name} already has a commitment to this fund.")
-        
-        return cleaned_data
-
-
-class CapitalCallForm(forms.ModelForm):
-    """
-    Form for creating a capital call for a specific fund.
-    Lives in the 'funds' app for UI but creates a 'transactions' model instance.
-    """
+class NavSnapshotForm(forms.ModelForm):
     class Meta:
-        model = CapitalCall
-        # Note: 'fund' will be set in the view. We assume one call per investor for simplicity here.
-        fields = ['investor', 'call_date', 'amount_called', 'reference']
+        model = NavSnapshot
+        fields = ['as_on_date', 'nav_per_unit', 'aum', 'units_outstanding', 'is_first_close_nav']
         widgets = {
-            'investor': forms.Select(attrs=form_widget_attrs),
-            'call_date': forms.DateInput(attrs={'type': 'date', **form_widget_attrs}),
-            'amount_called': forms.NumberInput(attrs=form_widget_attrs),
-            'reference': forms.TextInput(attrs=form_widget_attrs),
+            'as_on_date': forms.DateInput(attrs={'class': INPUT_STYLE, 'type': 'date'}),
+            'nav_per_unit': forms.NumberInput(attrs={'class': INPUT_STYLE, 'step': '0.0001'}),
+            'aum': forms.NumberInput(attrs={'class': INPUT_STYLE}),
+            'units_outstanding': forms.NumberInput(attrs={'class': INPUT_STYLE, 'step': '0.0001'}),
+            'is_first_close_nav': forms.CheckboxInput(attrs={'class': 'w-5 h-5 rounded text-indigo-600'}),
         }
-
-    def __init__(self, *args, **kwargs):
-        self.fund = kwargs.pop('fund', None)
-        super().__init__(*args, **kwargs)
-        if self.fund:
-            # Filter investors to only those committed to this fund
-            committed_investor_ids = self.fund.commitments.values_list('investor_id', flat=True)
-            self.fields['investor'].queryset = Investor.objects.filter(id__in=committed_investor_ids)

@@ -1,23 +1,27 @@
 {% extends 'base.html' %}
 
-{% block title %}Performance Report for {{ fund.name }}{% endblock %}
+{% block title %}Performance — {{ fund.name }}{% endblock %}
 
 {% block content %}
-<div class="space-y-8">
-  <h1 class="text-3xl font-bold text-slate-900 mb-2">Performance Report for {{ fund.name }}</h1>
-  <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-    <div class="bg-white p-5 rounded-xl shadow border border-slate-200">
-      <h2 class="text-xs font-semibold uppercase tracking-wide text-slate-500">IRR</h2>
-      <p class="mt-2 text-2xl font-bold text-slate-900">{{ performance_data.irr }}</p>
+<div class="flex items-center gap-4 mb-8">
+    <a href="{% url 'funds:fund_detail' fund.pk %}" class="w-10 h-10 flex items-center justify-center bg-white rounded-xl shadow-sm text-secondary hover:text-primary transition border border-slate-100">
+        <i class="bi bi-arrow-left"></i>
+    </a>
+    <h1 class="text-3xl font-bold text-dark">Performance: {{ fund.name }}</h1>
+</div>
+
+<div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+    <div class="bg-white p-8 rounded-3xl shadow-sm border border-slate-100">
+        <h2 class="text-xs font-black uppercase tracking-widest text-secondary mb-4">Internal Rate of Return (IRR)</h2>
+        <p class="text-4xl font-black text-dark">{{ performance_data.irr|default:"TBD" }}%</p>
     </div>
-    <div class="bg-white p-5 rounded-xl shadow border border-slate-200">
-      <h2 class="text-xs font-semibold uppercase tracking-wide text-slate-500">TVPI</h2>
-      <p class="mt-2 text-2xl font-bold text-indigo-600">{{ performance_data.tvpi }}</p>
+    <div class="bg-white p-8 rounded-3xl shadow-sm border border-slate-100">
+        <h2 class="text-xs font-black uppercase tracking-widest text-secondary mb-4">TVPI (Multiple)</h2>
+        <p class="text-4xl font-black text-indigo-600">{{ performance_data.tvpi|default:"0.00x" }}</p>
     </div>
-    <div class="bg-white p-5 rounded-xl shadow border border-slate-200">
-      <h2 class="text-xs font-semibold uppercase tracking-wide text-slate-500">DPI</h2>
-      <p class="mt-2 text-2xl font-bold text-emerald-600">{{ performance_data.dpi }}</p>
+    <div class="bg-white p-8 rounded-3xl shadow-sm border border-slate-100">
+        <h2 class="text-xs font-black uppercase tracking-widest text-secondary mb-4">DPI (Realized)</h2>
+        <p class="text-4xl font-black text-emerald-600">{{ performance_data.dpi|default:"0.00x" }}</p>
     </div>
-  </div>
 </div>
 {% endblock %}

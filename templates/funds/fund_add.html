@@ -1,0 +1,166 @@
+{% extends 'base.html' %}
+{% block title %}Register New Fund • AIF SEC{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto">
+    <!-- Header -->
+    <div class="flex items-center gap-4 mb-8">
+        <a href="{% url 'funds:portal-funds' %}" class="w-10 h-10 flex items-center justify-center bg-white rounded-xl shadow-sm text-secondary hover:text-primary transition border border-slate-100">
+            <i class="bi bi-arrow-left"></i>
+        </a>
+        <div>
+            <h1 class="text-3xl font-black text-dark tracking-tight">Register New Fund</h1>
+            <p class="text-secondary text-sm font-medium">Define scheme jurisdiction, functional currency, and capital structure.</p>
+        </div>
+    </div>
+
+    <!-- Error Summary (Global/Non-field errors) -->
+    {% if form.non_field_errors or messages %}
+    <div class="mb-6 space-y-2">
+        {% for error in form.non_field_errors %}
+        <div class="p-4 bg-rose-50 border border-rose-100 rounded-xl text-rose-700 text-xs font-bold flex items-center gap-2">
+            <i class="bi bi-exclamation-octagon-fill"></i> {{ error }}
+        </div>
+        {% endfor %}
+        {% for message in messages %}
+        {% if message.tags == 'error' %}
+        <div class="p-4 bg-rose-50 border border-rose-100 rounded-xl text-rose-700 text-xs font-bold flex items-center gap-2">
+            <i class="bi bi-exclamation-octagon-fill"></i> {{ message }}
+        </div>
+        {% endif %}
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    <form class="bg-white rounded-3xl shadow-sm border border-slate-100 p-8 space-y-10" method="POST" onsubmit="return handleFormSubmit(this)">
+        {% csrf_token %}
+        
+        <!-- SECTION 1: Identity & Currency -->
+        <div class="pb-6 border-b border-slate-50">
+            <h3 class="text-[10px] font-black text-dark uppercase tracking-widest mb-6 flex items-center gap-2">
+                <span class="w-6 h-6 bg-primary text-white flex items-center justify-center rounded-full text-[10px]">1</span> Structure & Currency
+            </h3>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <!-- Jurisdiction -->
+                <div>
+                    <label class="block text-[10px] font-black text-secondary uppercase tracking-widest mb-2">Jurisdiction</label>
+                    {{ form.jurisdiction }}
+                    {% if form.jurisdiction.errors %}<p class="text-[10px] text-rose-500 mt-1 font-bold">{{ form.jurisdiction.errors.0 }}</p>{% endif %}
+                </div>
+                <!-- Scheme Type -->
+                <div>
+                    <label class="block text-[10px] font-black text-secondary uppercase tracking-widest mb-2">Scheme Type</label>
+                    {{ form.scheme_type }}
+                    {% if form.scheme_type.errors %}<p class="text-[10px] text-rose-500 mt-1 font-bold">{{ form.scheme_type.errors.0 }}</p>{% endif %}
+                </div>
+                <!-- Functional Currency -->
+                <div>
+                    <label class="block text-[10px] font-black text-secondary uppercase tracking-widest mb-2">Functional Currency</label>
+                    {{ form.currency }}
+                    {% if form.currency.errors %}<p class="text-[10px] text-rose-500 mt-1 font-bold">{{ form.currency.errors.0 }}</p>{% endif %}
+                </div>
+                
+                <!-- Parent Fund (Conditional) -->
+                <div id="parentFundField" class="{% if form.scheme_type.value != 'CIV' %}hidden{% endif %} col-span-3">
+                    <label class="block text-[10px] font-black text-secondary uppercase tracking-widest mb-2">Linked Parent Fund</label>
+                    {{ form.parent_fund }}
+                    <p class="text-[9px] text-slate-400 mt-1 italic">Required for Co-Investment Vehicles (CIV)</p>
+                    {% if form.parent_fund.errors %}<p class="text-[10px] text-rose-500 mt-1 font-bold">{{ form.parent_fund.errors.0 }}</p>{% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- SECTION 2: Legal & Financials -->
+        <div class="pb-6 border-b border-slate-50">
+            <h3 class="text-[10px] font-black text-dark uppercase tracking-widest mb-6 flex items-center gap-2">
+                <span class="w-6 h-6 bg-primary text-white flex items-center justify-center rounded-full text-[10px]">2</span> Corpus & Compliance
+            </h3>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div class="col-span-2">
+                    <label class="block text-[10px] font-black text-secondary uppercase tracking-widest mb-2">Fund Legal Name</label>
+                    {{ form.name }}
+                    {% if form.name.errors %}<p class="text-[10px] text-rose-500 mt-1 font-bold">{{ form.name.errors.0 }}</p>{% endif %}
+                </div>
+                <div>
+                    <label class="block text-[10px] font-black text-secondary uppercase tracking-widest mb-2">Registration Number</label>
+                    {{ form.sebi_registration_number }}
+                    {% if form.sebi_registration_number.errors %}<p class="text-[10px] text-rose-500 mt-1 font-bold">{{ form.sebi_registration_number.errors.0 }}</p>{% endif %}
+                </div>
+                <div>
+                    <label class="block text-[10px] font-black text-secondary uppercase tracking-widest mb-2">Category</label>
+                    {{ form.category }}
+                    {% if form.category.errors %}<p class="text-[10px] text-rose-500 mt-1 font-bold">{{ form.category.errors.0 }}</p>{% endif %}
+                </div>
+                <div>
+                    <label class="block text-[10px] font-black text-secondary uppercase tracking-widest mb-2">Target Corpus</label>
+                    {{ form.corpus }}
+                    {% if form.corpus.errors %}<p class="text-[10px] text-rose-500 mt-1 font-bold">{{ form.corpus.errors.0 }}</p>{% endif %}
+                </div>
+                <div>
+                    <label class="block text-[10px] font-black text-secondary uppercase tracking-widest mb-2">Sponsor Commitment</label>
+                    {{ form.sponsor_commitment }}
+                    <p class="text-[9px] text-slate-400 mt-1 italic">SEBI 2025: Min 2.5% of corpus or ₹5Cr</p>
+                    {% if form.sponsor_commitment.errors %}<p class="text-[10px] text-rose-500 mt-1 font-bold">{{ form.sponsor_commitment.errors.0 }}</p>{% endif %}
+                </div>
+                <div>
+                    <label class="block text-[10px] font-black text-secondary uppercase tracking-widest mb-2">Inception Date</label>
+                    {{ form.date_of_inception }}
+                </div>
+                <div>
+                    <label class="block text-[10px] font-black text-secondary uppercase tracking-widest mb-2">Manager Entity</label>
+                    {{ form.manager }}
+                    {% if form.manager.errors %}<p class="text-[10px] text-rose-500 mt-1 font-bold">{{ form.manager.errors.0 }}</p>{% endif %}
+                </div>
+            </div>
+        </div>
+
+        <div class="flex justify-end pt-4">
+            <button type="submit" id="submitBtn" class="bg-primary text-white px-10 py-4 rounded-2xl font-black text-sm shadow-xl shadow-indigo-100 hover:bg-indigo-700 transition flex items-center gap-3 group">
+                <span>Register Scheme</span>
+                <i class="bi bi-arrow-right group-hover:translate-x-1 transition-transform"></i>
+            </button>
+        </div>
+    </form>
+</div>
+
+<!-- Form Styling -->
+<style>
+    select, input[type="text"], input[type="number"], input[type="date"] {
+        width: 100%; padding: 0.875rem 1.25rem; background-color: #f8fafc;
+        border: 1px solid #f1f5f9; border-radius: 1rem; font-size: 0.875rem;
+        outline: none; transition: all 0.2s; font-weight: 600; color: #1e293b;
+    }
+    select:focus, input:focus { border-color: #6366f1; background-color: #fff; box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.1); }
+</style>
+
+<!-- Interaction Logic -->
+<script>
+    // Logic to show/hide Parent Fund field based on Scheme Type
+    const schemeSelect = document.querySelector('select[name="scheme_type"]');
+    const parentDiv = document.getElementById('parentFundField');
+
+    if (schemeSelect) {
+        schemeSelect.addEventListener('change', function() {
+            if (this.value === 'CIV') {
+                parentDiv.classList.remove('hidden');
+            } else {
+                parentDiv.classList.add('hidden');
+            }
+        });
+    }
+
+    // Submit button feedback
+    function handleFormSubmit(form) {
+        const btn = form.querySelector('#submitBtn');
+        const text = btn.querySelector('span');
+        const icon = btn.querySelector('i');
+        
+        btn.disabled = true;
+        btn.classList.add('opacity-50', 'cursor-not-allowed');
+        text.innerText = "Securing Identity...";
+        icon.className = "bi bi-arrow-repeat animate-spin";
+        
+        return true;
+    }
+</script>
+{% endblock %}

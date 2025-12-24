@@ -1,73 +1,102 @@
-<body class="bg-light"><div class="container py-4"><!doctype html><html><head>
-<!-- Added by automated fixer: Bootstrap 5 + meta -->
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-2dyVtHcYq4uW6GfBa6XJgkv1z0uM8sF+K2QGm0Cw8C0fM3Zf3Q8pQ0G3qE3rj1YL" crossorigin="anonymous">
-<link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
-</head>{% extends "base.html" %}
-{% block title %}Investors{% endblock %}
+{% extends "base.html" %}
+
+{% block title %}Investor Registry • AIF SEC{% endblock %}
 
 {% block content %}
-<h1 class="text-2xl font-semibold mb-6">Investors</h1>
+<div class="flex flex-col md:flex-row md:items-end justify-between mb-8 gap-6">
+    <div>
+        <h1 class="text-3xl font-bold text-dark tracking-tight">Investor Registry</h1>
+        <p class="text-secondary mt-1 font-medium">Manage KYC, accreditation, and capital commitments for all partners.</p>
+    </div>
 
-<div class="mb-4 flex flex-wrap items-center gap-3">
-  <form method="get" class="flex items-center gap-2">
-    <input name="q" value="{{ request.GET.q }}" placeholder="Search investors..."
-           class="px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring focus:ring-indigo-200">
-    <button class="px-3 py-2 rounded-lg text-sm bg-slate-800 text-white">Search</button>
-    {% if request.GET.q %}
-      <a href="." class="text-sm text-slate-600 underline">Clear</a>
-    {% endif %}
-  </form>
-  <a href="{% url 'admin:investors_investor_add' %}" class="ml-auto px-3 py-2 bg-indigo-600 text-white rounded-lg text-sm shadow">
-    ➕ Add Investor
-  </a>
+    <div class="flex flex-col items-end gap-3">
+        <!-- SCALE TOGGLE (INR / Crores / Millions) -->
+        <div class="bg-white p-1 rounded-xl shadow-sm border border-slate-200 inline-flex text-[10px] font-black uppercase tracking-widest overflow-hidden">
+            <a href="?denom=raw" class="px-3 py-2 rounded-lg transition-all {% if denom == 'raw' or not denom %}bg-dark text-white shadow-sm{% else %}text-secondary hover:text-dark{% endif %}">INR</a>
+            <a href="?denom=cr" class="px-3 py-2 rounded-lg transition-all {% if denom == 'cr' %}bg-primary text-white shadow-sm{% else %}text-secondary hover:text-dark{% endif %}">Crores</a>
+            <a href="?denom=m" class="px-3 py-2 rounded-lg transition-all {% if denom == 'm' %}bg-indigo-600 text-white shadow-sm{% else %}text-secondary hover:text-dark{% endif %}">Millions</a>
+        </div>
+        
+        <div class="flex gap-3">
+            <a href="{% url 'investors:portal-add' %}" class="bg-primary text-white px-5 py-2.5 rounded-xl font-bold text-sm shadow-lg shadow-indigo-200 hover:bg-indigo-700 transition flex items-center gap-2">
+                <i class="bi bi-person-plus-fill"></i> New Investor
+            </a>
+        </div>
+    </div>
 </div>
 
-<div class="bg-white shadow rounded-lg overflow-hidden border border-slate-200">
-  <h2 class="text-sm font-semibold px-4 py-3 border-b bg-slate-50 text-slate-700 uppercase">Investor List</h2>
-
-  {% if investors %}
-  <div class="overflow-x-auto">
-    <table class="min-w-full text-sm">
-      <thead class="bg-slate-100 text-slate-700 uppercase text-xs">
-        <tr>
-          <th class="px-4 py-2 text-left">Investor</th>
-          <th class="px-4 py-2 text-left">PAN</th>
-          <th class="px-4 py-2 text-right">Commitment (₹)</th>
-          <th class="px-4 py-2 text-center">Compliance</th>
-          <th class="px-4 py-2 text-right">Actions</th>
-        </tr>
-      </thead>
-      <tbody>
-        {% for inv in investors %}
-        <tr class="border-t hover:bg-slate-50">
-          <td class="px-4 py-2">
-            <a href="{% url 'investor_detail' inv.pk %}" class="font-medium text-indigo-700 hover:underline">{{ inv.name }}</a>
-          </td>
-          <td class="px-4 py-2">{{ inv.pan }}</td>
-          <td class="px-4 py-2 text-right">₹{{ inv.total_commitment|default:0|floatformat:2 }}</td>
-          <td class="px-4 py-2 text-center">
-            {% if inv.compliance_flag %}
-              <span class="px-2 py-1 bg-emerald-100 text-emerald-700 rounded text-xs">Compliant</span>
-            {% else %}
-              <span class="px-2 py-1 bg-rose-100 text-rose-700 rounded text-xs">Pending</span>
-            {% endif %}
-          </td>
-          <td class="px-4 py-2 text-right">
-            <a href="{% url 'add_commitment' inv.pk %}" class="text-sm text-slate-700 underline">Add Commitment</a>
-          </td>
-        </tr>
-        {% endfor %}
-      </tbody>
-    </table>
-  </div>
-  {% else %}
-  <div class="px-4 py-6 text-center text-slate-500">No investors have been added yet.</div>
-  {% endif %}
+<div class="bg-white rounded-3xl shadow-sm border border-slate-100 overflow-hidden">
+    <div class="overflow-x-auto">
+        <table class="w-full text-left border-collapse">
+            <thead>
+                <tr class="bg-slate-50/50 border-b border-slate-100 text-xs uppercase tracking-widest text-secondary font-bold">
+                    <th class="px-8 py-5">Investor Name</th>
+                    <th class="px-6 py-5">Type & Compliance</th>
+                    <th class="px-6 py-5 text-right">Total Committed</th>
+                    <th class="px-6 py-5 text-right">Uncalled (Dry Powder)</th>
+                    <th class="px-6 py-5 text-center">KYC Status</th>
+                    <th class="px-8 py-5 text-right">Action</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-50">
+                {% for item in investors %}
+                <tr class="hover:bg-slate-50/80 transition group">
+                    <td class="px-8 py-5">
+                        <div class="font-bold text-dark">{{ item.investor.name }}</div>
+                        <div class="text-[10px] text-slate-400 font-mono mt-0.5 uppercase">{{ item.investor.pan }}</div>
+                    </td>
+                    <td class="px-6 py-5">
+                        <div class="flex flex-wrap gap-1.5">
+                            <span class="px-2 py-0.5 bg-slate-100 text-slate-600 rounded text-[10px] font-bold uppercase tracking-wider">
+                                {{ item.investor.get_investor_type_display }}
+                            </span>
+                            
+                            <!-- 2025 Accreditation Badge -->
+                            {% if item.investor.accreditation_status == 'VALID' %}
+                                <span class="px-2 py-0.5 bg-emerald-50 text-emerald-600 rounded text-[10px] font-bold uppercase tracking-wider border border-emerald-100">Accredited</span>
+                            {% elif item.investor.accreditation_status == 'EXPIRED' %}
+                                <span class="px-2 py-0.5 bg-rose-50 text-rose-600 rounded text-[10px] font-bold uppercase tracking-wider border border-rose-100">Expired</span>
+                            {% endif %}
+                        </div>
+                    </td>
+                    <td class="px-6 py-5 text-right font-bold text-slate-700">
+                        ₹{{ item.total_committed|floatformat:2 }} <span class="text-[10px] text-slate-400 font-bold uppercase">{{ suffix }}</span>
+                    </td>
+                    <td class="px-6 py-5 text-right">
+                        <span class="px-3 py-1 {% if item.uncalled_capital > 0 %}bg-indigo-50 text-primary{% else %}bg-slate-50 text-slate-400{% endif %} rounded-full text-xs font-black">
+                            ₹{{ item.uncalled_capital|floatformat:2 }} {{ suffix }}
+                        </span>
+                    </td>
+                    <td class="px-6 py-5 text-center">
+                        <div class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wider
+                            {% if item.kyc_status == 'VERIFIED' %}bg-green-100 text-green-700
+                            {% elif item.kyc_status == 'PENDING' %}bg-amber-100 text-amber-700
+                            {% elif item.kyc_status == 'REJECTED' %}bg-rose-100 text-rose-700
+                            {% else %}bg-slate-100 text-slate-600{% endif %}">
+                            {{ item.kyc_status }}
+                        </div>
+                    </td>
+                    <td class="px-8 py-5 text-right">
+                        <div class="flex justify-end gap-2">
+                            <a href="{% url 'investors:portal-detail' item.investor.pk %}" class="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-white border border-slate-200 text-secondary hover:text-primary hover:border-primary transition-all shadow-sm">
+                                <i class="bi bi-eye"></i>
+                            </a>
+                        </div>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="6" class="px-8 py-20 text-center">
+                        <div class="flex flex-col items-center">
+                            <i class="bi bi-people text-5xl text-slate-100 mb-4"></i>
+                            <p class="text-secondary font-medium italic">No investors found in registry.</p>
+                            <a href="{% url 'investors:portal-add' %}" class="mt-4 text-primary font-bold text-sm">Onboard your first investor →</a>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
 </div>
-
 {% endblock %}
-</div><!-- Added by automated fixer: Bootstrap JS -->
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-j1k2cbn6hQYQW3xw2VbX9kC9o7bT8o6yC5dYF6q0bYkI3yXl9hKxZ+o5uS7Jj9Lx" crossorigin="anonymous"></script>
-</body>

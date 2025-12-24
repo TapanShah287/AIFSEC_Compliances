@@ -1,0 +1,134 @@
+{% extends 'base.html' %}
+{% block title %}Record Investment • Purchase{% endblock %}
+
+{% block content %}
+<div class="max-w-3xl mx-auto">
+    <div class="flex items-center gap-4 mb-8">
+        <!-- Back Button -->
+        <a href="{% url 'funds:fund_portfolio' fund.pk %}" class="w-10 h-10 flex items-center justify-center bg-white rounded-xl shadow-sm text-secondary hover:text-primary transition border border-slate-100">
+            <i class="bi bi-arrow-left"></i>
+        </a>
+        <div>
+            <h1 class="text-2xl font-bold text-dark">Record New Investment</h1>
+            <p class="text-sm text-secondary">Post a purchase transaction to the fund ledger.</p>
+        </div>
+    </div>
+
+    <form method="post" class="bg-white rounded-3xl shadow-sm border border-slate-100 p-8 space-y-8">
+        {% csrf_token %}
+
+        <!-- Global Error Block -->
+        {% if form.errors %}
+        <div class="p-4 bg-rose-50 border border-rose-100 rounded-xl text-sm text-rose-600 flex items-start gap-3">
+            <i class="bi bi-exclamation-triangle-fill mt-0.5"></i>
+            <div>
+                <p class="font-bold">Submission failed. Please correct the errors below.</p>
+                {{ form.non_field_errors }}
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Core Details -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div class="md:col-span-2">
+                <label class="block text-xs font-black text-secondary uppercase tracking-widest mb-2">Investee Company</label>
+                {{ form.investee_company }}
+                {% if form.investee_company.errors %}<p class="text-xs text-rose-500 mt-1 font-bold">{{ form.investee_company.errors.0 }}</p>{% endif %}
+            </div>
+            
+            <div class="md:col-span-2">
+                <label class="block text-xs font-black text-secondary uppercase tracking-widest mb-2">Instrument Class</label>
+                {{ form.share_capital }}
+                <p class="text-[10px] text-slate-400 mt-1 italic">Select a company first to see available instruments.</p>
+                {% if form.share_capital.errors %}<p class="text-xs text-rose-500 mt-1 font-bold">{{ form.share_capital.errors.0 }}</p>{% endif %}
+            </div>
+
+            <div>
+                <label class="block text-xs font-black text-secondary uppercase tracking-widest mb-2">Quantity (Units)</label>
+                {{ form.quantity }}
+                {% if form.quantity.errors %}<p class="text-xs text-rose-500 mt-1 font-bold">{{ form.quantity.errors.0 }}</p>{% endif %}
+            </div>
+            <div>
+                <label class="block text-xs font-black text-secondary uppercase tracking-widest mb-2">Price Per Unit (₹)</label>
+                {{ form.price }}
+                {% if form.price.errors %}<p class="text-xs text-rose-500 mt-1 font-bold">{{ form.price.errors.0 }}</p>{% endif %}
+            </div>
+        </div>
+
+        <!-- Dates -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 pt-6 border-t border-slate-50">
+            <div>
+                <label class="block text-xs font-black text-secondary uppercase tracking-widest mb-2">Trade Date</label>
+                {{ form.trade_date }}
+                {% if form.trade_date.errors %}<p class="text-xs text-rose-500 mt-1 font-bold">{{ form.trade_date.errors.0 }}</p>{% endif %}
+            </div>
+            <div>
+                <label class="block text-xs font-black text-secondary uppercase tracking-widest mb-2">Settlement Date</label>
+                {{ form.settle_date }}
+                {% if form.settle_date.errors %}<p class="text-xs text-rose-500 mt-1 font-bold">{{ form.settle_date.errors.0 }}</p>{% endif %}
+            </div>
+        </div>
+
+        <div>
+            <label class="block text-xs font-black text-secondary uppercase tracking-widest mb-2">Notes / Audit Remarks</label>
+            {{ form.notes }}
+            {% if form.notes.errors %}<p class="text-xs text-rose-500 mt-1 font-bold">{{ form.notes.errors.0 }}</p>{% endif %}
+        </div>
+
+        <div class="pt-4 flex justify-end">
+            <button type="submit" class="bg-primary text-white px-8 py-3.5 rounded-2xl font-bold shadow-xl shadow-primary/20 hover:bg-indigo-700 transition flex items-center">
+                <span>Post Transaction</span>
+                <i class="bi bi-check2-all ml-2 text-lg"></i>
+            </button>
+        </div>
+    </form>
+</div>
+
+<!-- Dynamic Filter Script -->
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const companySelect = document.querySelector('select[name="investee_company"]');
+        const capitalSelect = document.querySelector('select[name="share_capital"]');
+
+        if (companySelect && capitalSelect) {
+            companySelect.addEventListener('change', async function() {
+                const companyId = this.value;
+                
+                // Clear existing options
+                capitalSelect.innerHTML = '<option value="">Loading...</option>';
+                
+                if (!companyId) {
+                    capitalSelect.innerHTML = '<option value="">---------</option>';
+                    return;
+                }
+
+                try {
+                    // Fetch specific share classes for this company
+                    const response = await fetch(`/api/companies/${companyId}/`);
+                    if (!response.ok) throw new Error('Network response was not ok');
+                    
+                    const data = await response.json();
+                    
+                    // Reset and populate
+                    capitalSelect.innerHTML = '<option value="">Select Instrument...</option>';
+                    
+                    if (data.share_classes && data.share_classes.length > 0) {
+                        data.share_classes.forEach(sc => {
+                            const opt = document.createElement('option');
+                            opt.value = sc.id;
+                            // Handle DRF serializer field names (class_name + share_type)
+                            opt.textContent = `${sc.class_name} (${sc.share_type})`;
+                            capitalSelect.appendChild(opt);
+                        });
+                    } else {
+                         capitalSelect.innerHTML = '<option value="">No instruments defined</option>';
+                    }
+                } catch (error) {
+                    console.error('Error fetching instruments:', error);
+                    capitalSelect.innerHTML = '<option value="">Error loading data</option>';
+                }
+            });
+        }
+    });
+</script>
+{% endblock %}

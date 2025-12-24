@@ -1,0 +1,155 @@
+{% extends "base.html" %}
+
+{% block title %}Compliance Dashboard - AIF SEC{% endblock %}
+
+{% block content %}
+<div class="flex flex-col md:flex-row md:items-center justify-between mb-10 gap-6">
+    <div>
+        <h1 class="text-4xl font-extrabold text-dark tracking-tight">Compliance Control</h1>
+        <p class="text-secondary mt-2 text-lg">Monitoring and management of regulatory obligations.</p>
+    </div>
+    <div class="flex gap-3">
+        <a href="{% url 'portal-transactions' %}" class="px-5 py-2.5 bg-white text-dark border border-slate-200 rounded-xl shadow-sm text-sm font-bold flex items-center hover:bg-slate-50 transition">
+            <i class="bi bi-ledger mr-2"></i> View Ledger
+        </a>
+        <a href="{% url 'compliances:task_create' %}" class="px-5 py-2.5 bg-primary text-white rounded-xl shadow-lg shadow-primary/20 text-sm font-bold flex items-center hover:bg-indigo-700 transition">
+            <i class="bi bi-plus-circle-fill mr-2"></i> Create Task
+        </a>
+    </div>
+</div>
+
+<!-- Task Counters -->
+<div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
+    <div class="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm flex items-center gap-4">
+        <div class="w-12 h-12 bg-amber-50 rounded-xl flex items-center justify-center text-amber-600">
+            <i class="bi bi-clock-history text-xl"></i>
+        </div>
+        <div>
+            <p class="text-[10px] font-black text-secondary uppercase tracking-widest">Active Obligations</p>
+            <p class="text-2xl font-bold text-dark">{{ tasks.count }}</p>
+        </div>
+    </div>
+    <div class="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm flex items-center gap-4">
+        <div class="w-12 h-12 bg-rose-50 rounded-xl flex items-center justify-center text-danger">
+            <i class="bi bi-exclamation-octagon text-xl"></i>
+        </div>
+        <div>
+            <p class="text-[10px] font-black text-secondary uppercase tracking-widest">Overdue Items</p>
+            <p class="text-2xl font-bold text-danger">{{ overdue_count|default:0 }}</p>
+        </div>
+    </div>
+    <div class="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm flex items-center gap-4">
+        <div class="w-12 h-12 bg-emerald-50 rounded-xl flex items-center justify-center text-success">
+            <i class="bi bi-shield-check text-xl"></i>
+        </div>
+        <div>
+            <p class="text-[10px] font-black text-secondary uppercase tracking-widest">Regulatory Status</p>
+            <p class="text-sm font-bold text-emerald-700">Audit Ready</p>
+        </div>
+    </div>
+</div>
+
+<!-- Financial Overview Section -->
+<div class="mb-10">
+    <h2 class="text-xl font-bold text-dark mb-6 flex items-center">
+        <i class="bi bi-currency-exchange mr-2 text-primary"></i> Fund Financial Overview
+    </h2>
+    <div class="grid grid-cols-1 md:grid-cols-5 gap-4">
+        <!-- 1. Drawdown from Fund -->
+        <div class="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm hover:border-primary/20 transition-all">
+            <p class="text-[10px] font-black text-secondary uppercase tracking-widest mb-2">Total Drawdowns</p>
+            <p class="text-xl font-bold text-dark">₹{{ stats.total_drawdowns|default:"0.00" }}</p>
+            <p class="text-[10px] text-slate-400 mt-1">Capital called from LPs</p>
+        </div>
+
+        <!-- 2. Cash Available -->
+        <div class="bg-indigo-50 p-5 rounded-2xl border border-indigo-100 shadow-sm">
+            <p class="text-[10px] font-black text-indigo-900 uppercase tracking-widest mb-2">Available Cash</p>
+            <p class="text-xl font-bold text-primary">₹{{ stats.cash_available|default:"0.00" }}</p>
+            <p class="text-[10px] text-indigo-700 mt-1">From received drawdowns</p>
+        </div>
+
+        <!-- 3. Investments -->
+        <div class="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm">
+            <p class="text-[10px] font-black text-secondary uppercase tracking-widest mb-2">Total Investments</p>
+            <p class="text-xl font-bold text-dark">₹{{ stats.total_investments|default:"0.00" }}</p>
+            <p class="text-[10px] text-slate-400 mt-1">Deployed in Portfolio Co's</p>
+        </div>
+
+        <!-- 4. Redemptions (Exit Inflow) -->
+        <div class="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm">
+            <p class="text-[10px] font-black text-secondary uppercase tracking-widest mb-2">Redemptions</p>
+            <p class="text-xl font-bold text-emerald-600">₹{{ stats.total_redemptions|default:"0.00" }}</p>
+            <p class="text-[10px] text-slate-400 mt-1">Exits (Added to Cash)</p>
+        </div>
+
+        <!-- 5. Distributions (LP Outflow) -->
+        <div class="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm">
+            <p class="text-[10px] font-black text-secondary uppercase tracking-widest mb-2">Distributions</p>
+            <p class="text-xl font-bold text-rose-600">₹{{ stats.total_distributions|default:"0.00" }}</p>
+            <p class="text-[10px] text-slate-400 mt-1">Unused Surplus to LPs</p>
+        </div>
+    </div>
+</div>
+
+<div class="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
+    <div class="px-8 py-5 border-b border-slate-50 bg-slate-50/30 flex justify-between items-center">
+        <h2 class="font-bold text-dark">Pending & In-Progress Tasks</h2>
+        <div class="flex gap-2">
+            <span class="text-[10px] font-black text-secondary uppercase px-2 py-1 bg-white border border-slate-200 rounded">Regulatory Calendar</span>
+        </div>
+    </div>
+    <div class="overflow-x-auto">
+        <table class="w-full text-left border-collapse">
+            <thead class="bg-slate-50 border-b border-slate-100 text-secondary text-[10px] font-black uppercase tracking-widest">
+                <tr>
+                    <th class="px-8 py-4">Task Details</th>
+                    <th class="px-8 py-4">Fund</th>
+                    <th class="px-8 py-4">Deadline</th>
+                    <th class="px-8 py-4">Status</th>
+                    <th class="px-8 py-4 text-right">Action</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-50">
+                {% for task in tasks %}
+                <tr class="hover:bg-slate-50/50 transition-colors">
+                    <td class="px-8 py-4">
+                        <div class="font-bold text-dark">{{ task.get_topic_display }}</div>
+                        <div class="text-xs text-secondary truncate max-w-xs">{{ task.description }}</div>
+                    </td>
+                    <td class="px-8 py-4">
+                        <div class="text-sm font-semibold text-primary">{{ task.fund.name }}</div>
+                    </td>
+                    <td class="px-8 py-4">
+                        <div class="text-sm font-bold {% if task.is_overdue %}text-danger{% else %}text-dark{% endif %}">
+                            {{ task.due_date|date:"d M Y" }}
+                        </div>
+                    </td>
+                    <td class="px-8 py-4">
+                        <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-black uppercase 
+                            {% if task.status == 'PENDING' %}bg-amber-50 text-amber-600 border border-amber-100
+                            {% elif task.status == 'IN_PROGRESS' %}bg-indigo-50 text-indigo-600 border border-indigo-100
+                            {% elif task.status == 'OVERDUE' %}bg-rose-50 text-danger border border-rose-100
+                            {% else %}bg-slate-100 text-secondary{% endif %}">
+                            {{ task.get_status_display }}
+                        </span>
+                    </td>
+                    <td class="px-8 py-4 text-right">
+                        <a href="{% url 'compliances:task_detail' task.pk %}" class="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-slate-100 text-slate-600 hover:bg-primary hover:text-white transition">
+                            <i class="bi bi-chevron-right"></i>
+                        </a>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="5" class="px-8 py-20 text-center">
+                        <i class="bi bi-clipboard-check text-5xl text-slate-100 mb-4 block"></i>
+                        <p class="text-secondary italic">No pending compliance obligations.</p>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

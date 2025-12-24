@@ -1,0 +1,54 @@
+{% extends 'base.html' %}
+{% block title %}Investee Companies • Portfolio{% endblock %}
+
+{% block content %}
+<div class="space-y-8">
+    <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div>
+            <h1 class="text-3xl font-bold text-dark tracking-tight">Investee Companies</h1>
+            <p class="text-secondary font-medium mt-1">Manage portfolio entities and their capital structures.</p>
+        </div>
+        <a href="{% url 'investee_companies:portal-add' %}" class="bg-primary text-white px-6 py-3 rounded-xl font-bold shadow-lg shadow-primary/20 hover:bg-indigo-700 transition flex items-center justify-center">
+            <i class="bi bi-plus-lg mr-2"></i> Onboard Company
+        </a>
+    </div>
+
+    <!-- Search & Filter -->
+    <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-100">
+        <form method="GET" class="flex gap-3">
+            <div class="relative flex-1">
+                <i class="bi bi-search absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"></i>
+                <input type="text" name="q" value="{{ request.GET.q|default:'' }}" placeholder="Search by name or CIN..." class="w-full pl-11 pr-4 py-3 bg-slate-50 border border-slate-100 rounded-xl focus:ring-2 focus:ring-primary/20 outline-none transition">
+            </div>
+            <button type="submit" class="bg-dark text-white px-6 py-3 rounded-xl font-bold hover:bg-black transition">Search</button>
+        </form>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {% for company in companies %}
+        <div class="bg-white rounded-3xl shadow-sm border border-slate-100 p-6 hover:shadow-md transition group">
+            <div class="flex items-start justify-between mb-4">
+                <div class="w-12 h-12 bg-indigo-50 text-primary rounded-2xl flex items-center justify-center text-xl group-hover:bg-primary group-hover:text-white transition">
+                    <i class="bi bi-building"></i>
+                </div>
+                <span class="text-[10px] font-black uppercase tracking-widest px-2 py-1 bg-slate-100 text-slate-500 rounded">{{ company.sector|default:"General" }}</span>
+            </div>
+            <h3 class="text-lg font-bold text-dark mb-1">{{ company.name }}</h3>
+            <p class="text-xs text-secondary font-medium mb-4">CIN: {{ company.cin|default:"N/A" }}</p>
+            
+            <div class="pt-4 border-t border-slate-50 flex items-center justify-between">
+                <div class="text-[10px] text-slate-400 font-bold uppercase">Funding: ₹{{ company.total_funding_raised|floatformat:0 }}</div>
+                <a href="{% url 'investee_companies:portal-detail' company.pk %}" class="text-primary font-bold text-sm flex items-center hover:underline">
+                    View Portal <i class="bi bi-arrow-right ml-1"></i>
+                </a>
+            </div>
+        </div>
+        {% empty %}
+        <div class="col-span-full py-20 text-center">
+            <div class="text-slate-300 text-6xl mb-4"><i class="bi bi-inbox"></i></div>
+            <h3 class="text-lg font-bold text-slate-400">No companies onboarded yet.</h3>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}

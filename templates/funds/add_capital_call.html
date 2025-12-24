@@ -1,15 +1,55 @@
 {% extends "base.html" %}
 
-{% block title %}Add Capital Call — {{ fund.name }}{% endblock %}
+{% block title %}Raise Capital Call - {{ fund.name }}{% endblock %}
 
 {% block content %}
-<h1 class="text-2xl font-semibold mb-6">Add Capital Call — {{ fund.name }}</h1>
-<div class="mb-4">
-  <a href="{% url 'fund_detail' fund.pk %}" class="px-3 py-2 text-sm border rounded-lg hover:bg-slate-100">← Back to Fund</a>
+<div class="max-w-2xl mx-auto">
+    <div class="flex items-center gap-4 mb-8">
+        <a href="{% url 'funds:fund_detail' fund.pk %}" class="w-10 h-10 flex items-center justify-center bg-white rounded-xl shadow-sm text-secondary hover:text-primary transition border border-slate-100">
+            <i class="bi bi-arrow-left"></i>
+        </a>
+        <h1 class="text-3xl font-bold text-dark">Raise Capital Call</h1>
+    </div>
+
+    <div class="bg-white rounded-2xl shadow-sm border border-slate-100 p-8">
+        <div class="p-4 bg-amber-50 rounded-xl border border-amber-100 mb-8 flex items-start gap-4">
+            <i class="bi bi-info-circle-fill text-amber-600 mt-1"></i>
+            <p class="text-[12px] text-amber-900 leading-relaxed">
+                This will generate a drawdown request for <strong>{{ fund.name }}</strong>. All committed investors will be called pro-rata based on their uncalled capital.
+            </p>
+        </div>
+
+        <form method="post" class="space-y-6">
+            {% csrf_token %}
+            {% for field in form %}
+            <div>
+                <label class="block text-[10px] font-black text-secondary uppercase tracking-widest mb-2">{{ field.label }}</label>
+                {{ field }}
+                {% if field.errors %}<p class="text-[10px] text-rose-500 mt-1 font-bold">{{ field.errors.0 }}</p>{% endif %}
+            </div>
+            {% endfor %}
+
+            <div class="pt-6 border-t border-slate-50 flex justify-end gap-3">
+                <a href="{% url 'funds:fund_detail' fund.pk %}" class="px-6 py-2.5 text-secondary font-bold text-sm hover:bg-slate-50 rounded-xl transition">Cancel</a>
+                <button type="submit" class="px-8 py-2.5 bg-primary text-white font-bold rounded-xl shadow-lg shadow-indigo-100 hover:bg-indigo-700 transition">
+                    Confirm Capital Call
+                </button>
+            </div>
+        </form>
+    </div>
 </div>
-<form method="post" class="bg-white shadow rounded-lg overflow-hidden border border-slate-200 p-4 space-y-4">
-  {% csrf_token %}
-  {{ form.as_p }}
-  <button type="submit" class="px-3 py-2 bg-indigo-600 text-white rounded-lg text-sm">Save Capital Call</button>
-</form>
+
+<style>
+    select, input[type="text"], input[type="number"], input[type="date"], textarea {
+        width: 100%;
+        padding: 0.75rem 1rem;
+        background-color: #f8fafc;
+        border: 1px solid #f1f5f9;
+        border-radius: 0.75rem;
+        font-size: 0.875rem;
+        outline: none;
+        transition: all 0.2s;
+    }
+    select:focus, input:focus { border-color: #6366f1; background-color: #fff; box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.1); }
+</style>
 {% endblock %}

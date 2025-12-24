@@ -1,0 +1,114 @@
+{% extends 'base.html' %}
+{% block title %}Onboard Investor - AIF SEC{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl">
+    <div class="flex items-center gap-4 mb-8">
+        <a href="{% url 'investors:portal-list' %}" class="w-10 h-10 flex items-center justify-center bg-white rounded-xl shadow-sm text-secondary hover:text-primary transition">
+            <i class="bi bi-arrow-left"></i>
+        </a>
+        <h1 class="text-3xl font-bold text-dark">Onboard New Investor</h1>
+    </div>
+
+    <!-- Standard Django Form Errors Fallback -->
+    {% if form.errors %}
+    <div class="mb-6 p-4 bg-rose-50 border border-rose-200 text-danger rounded-xl text-sm">
+        <p class="font-bold mb-1">Please correct the following errors:</p>
+        <ul class="list-disc ml-5">
+            {% for field, errors in form.errors.items %}
+                <li><strong>{{ field|title }}:</strong> {{ errors|striptags }}</li>
+            {% endfor %}
+        </ul>
+    </div>
+    {% endif %}
+
+    <form class="bg-white rounded-2xl shadow-sm border border-slate-100 p-8" id="investorForm" method="POST" novalidate>
+        {% csrf_token %}
+        
+        <!-- Hidden field to satisfy 'kyc_status' requirement -->
+        <input type="hidden" name="kyc_status" value="PENDING">
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div class="col-span-2 md:col-span-1">
+                <label class="block text-xs font-bold text-secondary uppercase tracking-widest mb-2">Legal Name</label>
+                <input name="name" id="id_name" class="w-full px-4 py-3 bg-light border-0 rounded-xl focus:ring-2 focus:ring-primary/20 outline-none" required placeholder="Full Name or Entity Name" value="{{ form.name.value|default:'' }}">
+            </div>
+            <div>
+                <label class="block text-xs font-bold text-secondary uppercase tracking-widest mb-2">Investor Type</label>
+                <select name="investor_type" id="id_investor_type" class="w-full px-4 py-3 bg-light border-0 rounded-xl focus:ring-2 focus:ring-primary/20 outline-none" required>
+                    <option value="INDIVIDUAL" {% if form.investor_type.value == 'INDIVIDUAL' %}selected{% endif %}>Individual</option>
+                    <option value="HUF" {% if form.investor_type.value == 'HUF' %}selected{% endif %}>HUF</option>
+                    <option value="CORPORATE" {% if form.investor_type.value == 'CORPORATE' %}selected{% endif %}>Corporate</option>
+                    <option value="TRUST" {% if form.investor_type.value == 'TRUST' %}selected{% endif %}>Trust</option>
+                    <option value="LLP" {% if form.investor_type.value == 'LLP' %}selected{% endif %}>LLP</option>
+                </select>
+            </div>
+            <div>
+                <label class="block text-xs font-bold text-secondary uppercase tracking-widest mb-2">PAN Number</label>
+                <input name="pan" id="id_pan" class="w-full px-4 py-3 bg-light border-0 rounded-xl focus:ring-2 focus:ring-primary/20 outline-none" placeholder="ABCDE1234F" value="{{ form.pan.value|default:'' }}">
+            </div>
+            <div>
+                <label class="block text-xs font-bold text-secondary uppercase tracking-widest mb-2">Email Address</label>
+                <input name="email" id="id_email" type="email" class="w-full px-4 py-3 bg-light border-0 rounded-xl focus:ring-2 focus:ring-primary/20 outline-none" placeholder="name@example.com" value="{{ form.email.value|default:'' }}">
+            </div>
+        </div>
+
+        <!-- JS Error Message Container -->
+        <div id="form-error" class="mt-6 p-4 bg-rose-50 text-danger border border-rose-100 rounded-xl hidden text-sm font-medium"></div>
+
+        <div class="mt-10 flex justify-end">
+            <button type="submit" id="submit-btn" class="bg-primary text-white px-8 py-3 rounded-xl font-bold shadow-lg shadow-primary/20 hover:bg-indigo-700 transition flex items-center">
+                <span id="btn-text">Create Investor Profile</span>
+                <i class="bi bi-arrow-right ml-2" id="btn-icon"></i>
+            </button>
+        </div>
+    </form>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const onboardForm = document.getElementById('investorForm');
+        
+        if (onboardForm) {
+            onboardForm.addEventListener('submit', async function(e) {
+                // Determine if we should attempt AJAX
+                // If the user hasn't defined the 'api' helper yet, we allow standard POST fallback
+                if (typeof api !== 'function') {
+                    console.warn("API helper not found. Falling back to standard form submission.");
+                    return true;
+                }
+
+                e.preventDefault(); 
+                e.stopPropagation();
+                
+                const btn = document.getElementById('submit-btn');
+                const btnText = document.getElementById('btn-text');
+                const errBox = document.getElementById('form-error');
+                
+                btn.disabled = true;
+                btnText.innerText = "Processing...";
+                errBox.classList.add('hidden');
+
+                const formData = new FormData(this);
+                const payload = Object.fromEntries(formData.entries());
+
+                try {
+                    const res = await api('/api/investors/', 'POST', payload);
+                    // On success, redirect to the portal detail view
+                    window.location.href = `/portal/investors/${res.id}/`;
+                    
+                } catch (error) {
+                    btn.disabled = false;
+                    btnText.innerText = "Create Investor Profile";
+                    
+                    errBox.innerText = "Submission Failed: " + error.message;
+                    errBox.classList.remove('hidden');
+                    console.error("Submission Error Details:", error);
+                }
+            });
+        }
+    });
+</script>
+{% endblock %}

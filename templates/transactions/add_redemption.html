@@ -1,0 +1,58 @@
+{% extends 'base.html' %}
+{% block title %}Record Exit • Redemption{% endblock %}
+
+{% block content %}
+<div class="max-w-3xl mx-auto">
+    <div class="flex items-center gap-4 mb-8">
+        <a href="{% url 'transactions:list' %}" class="w-10 h-10 flex items-center justify-center bg-white rounded-xl shadow-sm text-secondary hover:text-primary transition border border-slate-100">
+            <i class="bi bi-arrow-left"></i>
+        </a>
+        <div>
+            <h1 class="text-2xl font-bold text-dark">Record Redemption / Exit</h1>
+            <p class="text-sm text-secondary">Post an exit transaction to record realized gains.</p>
+        </div>
+    </div>
+
+    <form method="post" class="bg-white rounded-3xl shadow-sm border border-slate-100 p-8 space-y-8">
+        {% csrf_token %}
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div class="md:col-span-2">
+                <label class="block text-xs font-black text-secondary uppercase tracking-widest mb-2">Portfolio Company</label>
+                {{ form.investee_company }}
+            </div>
+            
+            <div class="md:col-span-2">
+                <label class="block text-xs font-black text-secondary uppercase tracking-widest mb-2">Exiting Instrument</label>
+                {{ form.share_capital }}
+            </div>
+
+            <div>
+                <label class="block text-xs font-black text-secondary uppercase tracking-widest mb-2">Quantity Sold</label>
+                {{ form.quantity }}
+            </div>
+            <div>
+                <label class="block text-xs font-black text-secondary uppercase tracking-widest mb-2">Exit Price (₹)</label>
+                {{ form.price }}
+            </div>
+        </div>
+
+        <div class="pt-6 border-t border-slate-50">
+            <label class="block text-xs font-black text-secondary uppercase tracking-widest mb-2">Exit Date</label>
+            {{ form.trade_date }}
+        </div>
+
+        <div>
+            <label class="block text-xs font-black text-secondary uppercase tracking-widest mb-2">Notes</label>
+            {{ form.notes }}
+        </div>
+
+        <div class="pt-4 flex justify-end">
+            <button type="submit" class="bg-rose-600 text-white px-8 py-3.5 rounded-2xl font-bold shadow-xl shadow-rose-100 hover:bg-rose-700 transition flex items-center">
+                <span>Record Exit</span>
+                <i class="bi bi-box-arrow-right ml-2 text-lg"></i>
+            </button>
+        </div>
+    </form>
+</div>
+{% endblock %}

@@ -1,16 +1,15 @@
-from django.urls import path, include
-from rest_framework.routers import DefaultRouter
-from .views import InvestorViewSet, InvestorKYCView, InvestorDocumentViewSet, portal_investor_detail
+# investors/urls.py
+from django.urls import path
+from . import views
 
-router = DefaultRouter()
-router.register(r"", InvestorViewSet, basename="investor")
-router.register(r"documents", InvestorDocumentViewSet, basename="investor-document")
+app_name = 'investors'
 
 urlpatterns = [
-    # API routes
-    path("kyc/<int:pk>/", InvestorKYCView.as_view(), name="investor-kyc"),
-    path("", include(router.urls)),
-
-    # Portal route (template)
-    path("portal/<int:pk>/", portal_investor_detail, name="portal-investor-detail"),
+    # Main Views
+    path('', views.portal_investor_list, name='portal-list'),
+    path('add/', views.portal_investor_add, name='portal-add'),
+    path('<int:pk>/', views.portal_investor_detail, name='portal-detail'),
+    
+    # Financial Operations
+    path('<int:pk>/commitment/add/', views.add_commitment, name='add_commitment'),
 ]

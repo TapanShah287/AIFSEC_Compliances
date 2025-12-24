@@ -1,0 +1,162 @@
+{% extends 'base.html' %}
+{% block title %}Capital Structure • {{ company.name }}{% endblock %}
+
+{% block content %}
+<div class="max-w-6xl mx-auto">
+    <div class="flex items-center gap-4 mb-8">
+        <a href="{% url 'investee_companies:portal-detail' company.pk %}" class="w-10 h-10 flex items-center justify-center bg-white rounded-xl shadow-sm text-secondary hover:text-primary transition border border-slate-100">
+            <i class="bi bi-arrow-left"></i>
+        </a>
+        <div>
+            <h1 class="text-2xl font-bold text-dark">Manage Capital Structure</h1>
+            <p class="text-sm text-secondary">Add or edit share classes (Equity, Preference, etc.) for {{ company.name }}</p>
+        </div>
+    </div>
+
+    <form method="post" class="bg-white rounded-2xl shadow-sm border border-slate-100 p-8 space-y-6" id="capitalForm">
+        {% csrf_token %}
+        
+        {% if formset.errors %}
+        <div class="p-4 bg-rose-50 border border-rose-100 rounded-xl text-sm text-rose-600 mb-6">
+            <p class="font-bold mb-2">Please correct the errors below:</p>
+            {{ formset.non_form_errors }}
+        </div>
+        {% endif %}
+
+        {{ formset.management_form }}
+        
+        <div class="flex justify-between items-center mb-4">
+            <div class="flex items-center gap-3">
+                <h2 class="text-lg font-bold text-dark">Share Classes</h2>
+                <span class="px-2 py-0.5 bg-indigo-50 text-indigo-700 text-[10px] font-black uppercase rounded border border-indigo-100">Instrument Definitions</span>
+            </div>
+            <button type="button" id="add-row-btn" class="text-xs font-bold bg-indigo-50 text-indigo-700 px-3 py-2 rounded-lg hover:bg-indigo-100 transition">
+                <i class="bi bi-plus-lg mr-1"></i> Add New Class
+            </button>
+        </div>
+
+        <div id="capital-formset-container" class="space-y-4">
+            {% for c_form in formset %}
+            <div class="capital-row p-4 bg-slate-50 rounded-xl border border-slate-200 relative">
+                {{ c_form.id }}
+                
+                <div class="grid grid-cols-1 md:grid-cols-6 gap-4">
+                    <div class="col-span-1">
+                        <label class="block text-[10px] font-bold text-secondary uppercase tracking-widest mb-1">Type</label>
+                        {{ c_form.share_type }}
+                        {% if c_form.share_type.errors %}<div class="text-xs text-rose-500 mt-1">{{ c_form.share_type.errors.0 }}</div>{% endif %}
+                    </div>
+                    <div class="col-span-1">
+                        <label class="block text-[10px] font-bold text-secondary uppercase tracking-widest mb-1">Class Name</label>
+                        {{ c_form.class_name }}
+                        {% if c_form.class_name.errors %}<div class="text-xs text-rose-500 mt-1">{{ c_form.class_name.errors.0 }}</div>{% endif %}
+                    </div>
+                     <div class="col-span-1">
+                        <label class="block text-[10px] font-bold text-secondary uppercase tracking-widest mb-1">Face Value (₹)</label>
+                        {{ c_form.face_value }}
+                        {% if c_form.face_value.errors %}<div class="text-xs text-rose-500 mt-1">{{ c_form.face_value.errors.0 }}</div>{% endif %}
+                    </div>
+                     <div class="col-span-1">
+                        <label class="block text-[10px] font-bold text-secondary uppercase tracking-widest mb-1">Paid-up Units</label>
+                        {{ c_form.issued_shares }}
+                        <p class="text-[9px] text-slate-400 mt-1">Opening balance</p>
+                    </div>
+                     <div class="col-span-1">
+                        <label class="block text-[10px] font-bold text-secondary uppercase tracking-widest mb-1">Auth. Capital</label>
+                        {{ c_form.authorized_capital }}
+                    </div>
+                     <div class="col-span-1">
+                        <label class="block text-[10px] font-bold text-secondary uppercase tracking-widest mb-1">As On Date</label>
+                        {{ c_form.as_on_date }}
+                    </div>
+                </div>
+                
+                {% if formset.can_delete %}
+                <div class="mt-3 flex items-center justify-end">
+                    <label class="inline-flex items-center text-xs text-rose-600 cursor-pointer hover:bg-rose-50 px-2 py-1 rounded">
+                        {{ c_form.DELETE }} 
+                        <span class="ml-1 font-semibold">Delete this class</span>
+                    </label>
+                </div>
+                {% endif %}
+            </div>
+            {% endfor %}
+        </div>
+
+        <div class="bg-amber-50 border border-amber-100 rounded-xl p-4 flex gap-3">
+            <i class="bi bi-info-circle-fill text-amber-500 text-lg"></i>
+            <p class="text-xs text-amber-800 leading-relaxed font-medium">
+                The <strong>Paid-up Units</strong> entered here represent the opening balance for this instrument class. 
+                Individual shareholder details can be recorded separately in the <strong>Cap Table</strong> to track specific ownership.
+            </p>
+        </div>
+
+        <div class="pt-4 border-t border-slate-100 flex justify-end">
+            <button type="submit" class="bg-primary text-white px-8 py-3 rounded-xl font-bold shadow-lg shadow-primary/20 hover:bg-indigo-700 transition flex items-center">
+                <span>Save Capital Changes</span>
+                <i class="bi bi-check2-circle ml-2 text-lg"></i>
+            </button>
+        </div>
+    </form>
+    
+    <!-- Empty Form Template -->
+    <div id="empty-form-template" class="hidden">
+        <div class="capital-row p-4 bg-slate-50 rounded-xl border border-slate-200 relative mt-4">
+            <input type="hidden" name="capital-__prefix__-id" id="id_capital-__prefix__-id">
+            <div class="grid grid-cols-1 md:grid-cols-6 gap-4">
+                <div class="col-span-1">
+                    <label class="block text-[10px] font-bold text-secondary uppercase tracking-widest mb-1">Type</label>
+                    {{ formset.empty_form.share_type }}
+                </div>
+                <div class="col-span-1">
+                    <label class="block text-[10px] font-bold text-secondary uppercase tracking-widest mb-1">Class Name</label>
+                    {{ formset.empty_form.class_name }}
+                </div>
+                 <div class="col-span-1">
+                    <label class="block text-[10px] font-bold text-secondary uppercase tracking-widest mb-1">Face Value (₹)</label>
+                    {{ formset.empty_form.face_value }}
+                </div>
+                 <div class="col-span-1">
+                    <label class="block text-[10px] font-bold text-secondary uppercase tracking-widest mb-1">Paid-up Units</label>
+                    {{ formset.empty_form.issued_shares }}
+                </div>
+                 <div class="col-span-1">
+                    <label class="block text-[10px] font-bold text-secondary uppercase tracking-widest mb-1">Auth. Capital</label>
+                    {{ formset.empty_form.authorized_capital }}
+                </div>
+                 <div class="col-span-1">
+                    <label class="block text-[10px] font-bold text-secondary uppercase tracking-widest mb-1">As On Date</label>
+                    {{ formset.empty_form.as_on_date }}
+                </div>
+            </div>
+            <button type="button" class="remove-row-btn absolute -top-2 -right-2 bg-white text-rose-500 rounded-full p-1 shadow border border-slate-200 hover:bg-rose-50">
+                <i class="bi bi-x-lg text-xs"></i>
+            </button>
+        </div>
+    </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const addBtn = document.getElementById('add-row-btn');
+        const container = document.getElementById('capital-formset-container');
+        const totalForms = document.getElementById('id_capital-TOTAL_FORMS');
+        const emptyTemplate = document.getElementById('empty-form-template').innerHTML;
+
+        if (addBtn) {
+            addBtn.addEventListener('click', function() {
+                const count = parseInt(totalForms.value);
+                const newRow = emptyTemplate.replace(/__prefix__/g, count);
+                container.insertAdjacentHTML('beforeend', newRow);
+                totalForms.value = count + 1;
+            });
+        }
+
+        container.addEventListener('click', function(e) {
+            if (e.target.closest('.remove-row-btn')) {
+                e.target.closest('.capital-row').remove();
+            }
+        });
+    });
+</script>
+{% endblock %}

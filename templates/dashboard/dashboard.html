@@ -1,185 +1,122 @@
-<!doctype html>
-<html lang="en">
-<head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Dashboard</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
-    <script>
-        tailwind.config = {
-            theme: {
-                extend: {
-                    colors: {
-                        'primary': '#4f46e5',
-                        'secondary': '#64748b',
-                        'success': '#22c55e',
-                        'danger': '#ef4444',
-                        'light': '#f8fafc',
-                        'dark': '#1e293b',
-                    }
-                }
-            }
-        }
-    </script>
-</head>
-<body class="bg-light">
+{% extends 'base.html' %}
+{% block title %}System Overview • AIF SEC{% endblock %}
 
-    <!-- Sidebar -->
-    <div class="fixed top-0 left-0 h-full w-64 bg-dark text-white p-5">
-        <h1 class="text-2xl font-bold mb-10">AIF Compliance</h1>
-        <ul class="space-y-4">
-            <li><a href="#" class="flex items-center text-lg hover:text-primary"><i class="bi bi-grid-1x2 mr-3"></i>Dashboard</a></li>
-            <li><a href="#" class="flex items-center text-lg hover:text-primary"><i class="bi bi-piggy-bank mr-3"></i>Funds</a></li>
-            <li><a href="#" class="flex items-center text-lg hover:text-primary"><i class="bi bi-people mr-3"></i>Investors</a></li>
-            <li><a href="#" class="flex items-center text-lg hover:text-primary"><i class="bi bi-building mr-3"></i>Companies</a></li>
-            <li><a href="#" class="flex items-center text-lg hover:text-primary"><i class="bi bi-arrow-left-right mr-3"></i>Transactions</a></li>
-            <li><a href="#" class="flex items-center text-lg hover:text-primary"><i class="bi bi-clipboard-check mr-3"></i>Compliance</a></li>
-        </ul>
+{% block content %}
+<div class="flex flex-col md:flex-row md:items-end justify-between mb-10 gap-4">
+    <div>
+        <h1 class="text-4xl font-extrabold text-dark tracking-tight">System Overview</h1>
+        <p class="text-secondary mt-2 text-lg">Centralized monitoring for AIF operations and capital flow.</p>
     </div>
 
-    <div class="ml-64 p-8">
-        <h1 class="text-4xl font-bold text-dark mb-8">Dashboard</h1>
+    <!-- Denomination Switcher Toggle -->
+    <div class="bg-white p-1 rounded-xl shadow-sm border border-slate-200 inline-flex text-[10px] font-black uppercase tracking-widest overflow-hidden">
+        <a href="?denom=raw" class="px-3 py-2 rounded-lg transition-all {% if denom == 'raw' %}bg-dark text-white shadow-sm{% else %}text-secondary hover:text-dark{% endif %}">
+            INR
+        </a>
+        <a href="?denom=cr" class="px-3 py-2 rounded-lg transition-all {% if denom == 'cr' %}bg-primary text-white shadow-sm{% else %}text-secondary hover:text-dark{% endif %}">
+            Crores
+        </a>
+        <a href="?denom=m" class="px-3 py-2 rounded-lg transition-all {% if denom == 'm' %}bg-indigo-600 text-white shadow-sm{% else %}text-secondary hover:text-dark{% endif %}">
+            Millions
+        </a>
+    </div>
+</div>
 
-        <!-- Core Metrics -->
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 mb-8">
-            <div class="bg-white p-6 rounded-xl shadow-md">
-                <h2 class="text-md font-medium text-secondary">Total Funds</h2>
-                <p class="mt-2 text-4xl font-semibold text-dark">{{ total_funds|default:"N/A" }}</p>
-            </div>
-            <div class="bg-white p-6 rounded-xl shadow-md">
-                <h2 class="text-md font-medium text-secondary">Total Investors</h2>
-                <p class="mt-2 text-4xl font-semibold text-dark">{{ total_investors|default:"N/A" }}</p>
-            </div>
-            <div class="bg-white p-6 rounded-xl shadow-md">
-                <h2 class="text-md font-medium text-secondary">Total Corpus</h2>
-                <p class="mt-2 text-4xl font-semibold text-primary">₹{{ total_corpus|floatformat:2 }}</p>
-            </div>
-            <div class="bg-white p-6 rounded-xl shadow-md">
-                <h2 class="text-md font-medium text-secondary">Total Committed</h2>
-                <p class="mt-2 text-4xl font-semibold text-success">₹{{ total_committed|floatformat:2 }}</p>
-            </div>
+<!-- Row 1: Operational Counts -->
+<div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
+    <a href="{% url 'funds:portal-funds' %}" class="bg-white p-8 rounded-3xl border border-slate-100 shadow-sm flex items-center justify-between group hover:border-primary/30 transition-all">
+        <div>
+            <p class="text-[10px] font-black text-secondary uppercase tracking-widest mb-1">Active Funds</p>
+            <p class="text-3xl font-bold text-dark">{{ fund_count }}</p>
+        </div>
+        <div class="w-14 h-14 bg-indigo-50 rounded-2xl flex items-center justify-center text-primary group-hover:bg-primary group-hover:text-white transition-all">
+            <i class="bi bi-safe2 text-2xl"></i>
+        </div>
+    </a>
+    
+    <a href="{% url 'investors:portal-list' %}" class="bg-white p-8 rounded-3xl border border-slate-100 shadow-sm flex items-center justify-between group hover:border-primary/30 transition-all">
+        <div>
+            <p class="text-[10px] font-black text-secondary uppercase tracking-widest mb-1">Total Investors</p>
+            <p class="text-3xl font-bold text-dark">{{ investor_count }}</p>
+        </div>
+        <div class="w-14 h-14 bg-slate-50 rounded-2xl flex items-center justify-center text-slate-400 group-hover:bg-primary group-hover:text-white transition-all">
+            <i class="bi bi-people text-2xl"></i>
+        </div>
+    </a>
+
+    <a href="{% url 'investee_companies:portal-list' %}" class="bg-white p-8 rounded-3xl border border-slate-100 shadow-sm flex items-center justify-between group hover:border-primary/30 transition-all">
+        <div>
+            <p class="text-[10px] font-black text-secondary uppercase tracking-widest mb-1">Portfolio Entities</p>
+            <p class="text-3xl font-bold text-dark">{{ company_count }}</p>
+        </div>
+        <div class="w-14 h-14 bg-slate-50 rounded-2xl flex items-center justify-center text-slate-400 group-hover:bg-primary group-hover:text-white transition-all">
+            <i class="bi bi-building text-2xl"></i>
+        </div>
+    </a>
+</div>
+
+<!-- Row 2: Fund Financial Overview -->
+<div class="mb-10">
+    <div class="flex items-center gap-3 mb-6">
+        <div class="h-8 w-1.5 bg-primary rounded-full"></div>
+        <h2 class="text-xl font-bold text-dark tracking-tight">Financial Overview {% if suffix %}(in {{ suffix }}){% endif %}</h2>
+    </div>
+    
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+        <div class="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm">
+            <p class="text-[10px] font-black text-secondary uppercase tracking-widest mb-2">Drawdowns</p>
+            <p class="text-xl font-bold text-dark">₹{{ stats.total_drawdowns }} {{ suffix }}</p>
+            <p class="text-[10px] text-slate-400 mt-1 italic">Capital Called</p>
         </div>
 
-        <!-- Second Row: Performance & Capital Flow -->
-        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-8">
-            <!-- Portfolio Performance -->
-            <div class="lg:col-span-2 bg-white p-6 rounded-xl shadow-md">
-                <h2 class="text-xl font-semibold text-dark mb-4">Portfolio Performance Overview</h2>
-                {% if portfolio_performance %}
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-center">
-                    <div>
-                        <h3 class="text-md text-secondary">Total Invested</h3>
-                        <p class="text-3xl font-semibold text-dark">₹{{ portfolio_performance.total_invested|floatformat:2 }}</p>
-                    </div>
-                    <div>
-                        <h3 class="text-md text-secondary">Current Value</h3>
-                        <p class="text-3xl font-semibold text-primary">₹{{ portfolio_performance.current_value|floatformat:2 }}</p>
-                    </div>
-                    <div>
-                        <h3 class="text-md text-secondary">Overall Gain/Loss</h3>
-                        <p class="text-3xl font-semibold {% if portfolio_performance.gain_loss >= 0 %}text-success{% else %}text-danger{% endif %}">
-                            ₹{{ portfolio_performance.gain_loss|floatformat:2 }}
-                        </p>
-                    </div>
-                </div>
-                {% else %}
-                <p class="text-md text-secondary">Performance data not available.</p>
-                {% endif %}
-            </div>
-            <!-- Capital Flow -->
-            <div class="bg-white p-6 rounded-xl shadow-md">
-                <h2 class="text-xl font-semibold text-dark mb-4">Capital Flow (Last 30 Days)</h2>
-                {% if capital_flow %}
-                <div class="space-y-4">
-                    <div class="flex justify-between items-baseline">
-                        <span class="text-md text-secondary">Capital Called</span>
-                        <span class="font-semibold text-danger text-lg">₹{{ capital_flow.called|floatformat:2 }}</span>
-                    </div>
-                    <div class="flex justify-between items-baseline">
-                        <span class="text-md text-secondary">Distributions Made</span>
-                        <span class="font-semibold text-success text-lg">₹{{ capital_flow.distributed|floatformat:2 }}</span>
-                    </div>
-                </div>
-                {% else %}
-                <p class="text-md text-secondary">Capital flow data not available.</p>
-                {% endif %}
-            </div>
+        <div class="bg-indigo-600 p-6 rounded-2xl shadow-xl shadow-indigo-100 border border-indigo-500">
+            <p class="text-[10px] font-black text-indigo-100 uppercase tracking-widest mb-2">Available Cash</p>
+            <p class="text-xl font-bold text-white">₹{{ stats.cash_available }} {{ suffix }}</p>
+            <p class="text-[10px] text-indigo-200 mt-1 italic">Net Liquidity</p>
         </div>
 
-        <!-- Third Row: Activity, Compliance -->
-        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-6">
-            <!-- Recent Activity -->
-            <div class="bg-white shadow-md rounded-xl">
-                <h2 class="text-xl font-semibold px-6 py-4 border-b text-dark">Recent Activity</h2>
-                {% if recent_activities %}
-                <ul class="divide-y divide-gray-200">
-                    {% for activity in recent_activities %}
-                    <li class="px-6 py-4">
-                        <p class="text-dark text-md">{{ activity.action }}</p>
-                        <p class="text-sm text-secondary">{{ activity.timestamp|date:"d M Y, P" }} by {{ activity.user|default:'System' }}</p>
-                    </li>
-                    {% endfor %}
-                </ul>
-                {% else %}
-                <p class="px-6 py-8 text-center text-md text-secondary">No recent activity logged.</p>
-                {% endif %}
-            </div>
+        <div class="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm">
+            <p class="text-[10px] font-black text-secondary uppercase tracking-widest mb-2">Investments</p>
+            <p class="text-xl font-bold text-dark">₹{{ stats.total_investments }} {{ suffix }}</p>
+            <p class="text-[10px] text-slate-400 mt-1 italic">Capital Deployed</p>
+        </div>
 
-            <!-- Investor Compliance -->
-            <div class="bg-white p-6 rounded-xl shadow-md">
-                <h2 class="text-xl font-semibold text-dark mb-4">Investor Compliance Snapshot</h2>
-                {% if investor_compliance %}
-                <div class="max-w-xs mx-auto">
-                    <canvas id="complianceChart"></canvas>
-                </div>
-                {% else %}
-                <p class="text-md text-secondary">Compliance data not available.</p>
-                {% endif %}
-            </div>
+        <div class="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm">
+            <p class="text-[10px] font-black text-secondary uppercase tracking-widest mb-2">Redemptions</p>
+            <p class="text-xl font-bold text-emerald-600">₹{{ stats.total_redemptions }} {{ suffix }}</p>
+            <p class="text-[10px] text-slate-400 mt-1 italic">Exit Inflows</p>
+        </div>
+
+        <div class="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm">
+            <p class="text-[10px] font-black text-secondary uppercase tracking-widest mb-2">Distributions</p>
+            <p class="text-xl font-bold text-rose-600">₹{{ stats.total_distributions }} {{ suffix }}</p>
+            <p class="text-[10px] text-slate-400 mt-1 italic">Returned to LPs</p>
         </div>
     </div>
+</div>
 
-    {% if investor_compliance %}
-    {{ investor_compliance|json_script:"compliance-data" }}
-    {% endif %}
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <script>
-        document.addEventListener('DOMContentLoaded', function () {
-            const complianceDataElement = document.getElementById('compliance-data');
-            if (complianceDataElement) {
-                const complianceData = JSON.parse(complianceDataElement.textContent);
-                const complianceCtx = document.getElementById('complianceChart');
-                if (complianceCtx) {
-                    new Chart(complianceCtx, {
-                        type: 'doughnut',
-                        data: {
-                            labels: ['Compliant', 'Pending'],
-                            datasets: [{
-                                label: 'Investor Compliance',
-                                data: [complianceData.compliant, complianceData.pending],
-                                backgroundColor: [
-                                    '#22c55e',
-                                    '#ef4444'
-                                ],
-                                borderColor: '#ffffff',
-                                borderWidth: 2,
-                                hoverOffset: 4
-                            }]
-                        },
-                        options: {
-                            responsive: true,
-                            cutout: '80%',
-                            plugins: {
-                                legend: {
-                                    position: 'bottom',
-                                },
-                            }
-                        }
-                    });
-                }
-            }
-        });
-    </script>
-</body>
-</html>
+<!-- Row 3: Quick Navigation -->
+<div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+    <div class="bg-dark p-8 rounded-3xl shadow-2xl text-white relative overflow-hidden">
+        <div class="relative z-10">
+            <h3 class="text-xl font-bold mb-2">Financial Ledger</h3>
+            <p class="text-slate-400 text-sm mb-6">Review all historical journals and transaction logs.</p>
+            <a href="{% url 'portal-transactions' %}" class="inline-flex items-center px-6 py-2.5 bg-primary text-white font-bold rounded-xl text-xs hover:bg-indigo-600 transition shadow-lg shadow-primary/20">
+                Open Ledger <i class="bi bi-arrow-right ml-2"></i>
+            </a>
+        </div>
+        <i class="bi bi-journal-text absolute -right-6 -bottom-6 text-9xl text-slate-800 opacity-50"></i>
+    </div>
+
+    <div class="bg-white p-8 rounded-3xl border border-slate-100 shadow-sm relative overflow-hidden">
+        <div class="relative z-10">
+            <h3 class="text-xl font-bold mb-2 text-dark">Compliance Tasks</h3>
+            <p class="text-secondary text-sm mb-6">You have <span class="text-danger font-bold">{{ overdue_count|default:0 }} overdue</span> obligations.</p>
+            <a href="{% url 'compliances:portal-home' %}" class="inline-flex items-center px-6 py-2.5 bg-slate-100 text-dark font-bold rounded-xl text-xs hover:bg-slate-200 transition">
+                Manage Compliance
+            </a>
+        </div>
+        <i class="bi bi-shield-check absolute -right-6 -bottom-6 text-9xl text-slate-50 opacity-50"></i>
+    </div>
+</div>
+{% endblock %}

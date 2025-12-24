@@ -1,0 +1,140 @@
+{% extends "base.html" %}
+
+{% block title %}Transactions Ledger • AIF{% endblock %}
+
+{% block content %}
+<div class="flex flex-col md:flex-row md:items-center justify-between mb-8 gap-4">
+    <div>
+        <h1 class="text-3xl font-bold text-dark">Transaction Ledger</h1>
+        <p class="text-secondary mt-1">Unified view of all financial events across funds and portfolio companies.</p>
+    </div>
+    
+    <!-- Transaction Type Toggles -->
+    <div class="bg-white p-1 rounded-xl shadow-sm border border-slate-200 inline-flex">
+        <button onclick="switchTab('investments')" id="tab-investments" class="px-4 py-2 text-sm font-bold rounded-lg transition-all bg-indigo-50 text-primary">
+            Investments
+        </button>
+        <button onclick="switchTab('commitments')" id="tab-commitments" class="px-4 py-2 text-sm font-bold rounded-lg transition-all text-secondary hover:text-dark">
+            Commitments
+        </button>
+        <button onclick="switchTab('receipts')" id="tab-receipts" class="px-4 py-2 text-sm font-bold rounded-lg transition-all text-secondary hover:text-dark">
+            Receipts
+        </button>
+        <button onclick="switchTab('distributions')" id="tab-distributions" class="px-4 py-2 text-sm font-bold rounded-lg transition-all text-secondary hover:text-dark">
+            Distributions
+        </button>
+    </div>
+</div>
+
+<!-- Ledger Table Container -->
+<div class="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden min-h-[400px]">
+    <div class="overflow-x-auto">
+        <table class="w-full text-left border-collapse">
+            <thead class="bg-slate-50 border-b border-slate-100 text-secondary text-[10px] font-black uppercase tracking-widest">
+                <tr id="table-headers">
+                    <!-- Headers injected via JS -->
+                </tr>
+            </thead>
+            <tbody id="ledger-body" class="divide-y divide-slate-50 text-sm text-slate-700">
+                <tr>
+                    <td colspan="5" class="px-6 py-10 text-center text-slate-400 italic">
+                        <i class="bi bi-arrow-clockwise animate-spin inline-block mr-2"></i> Loading transactions...
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    const CONFIG = {
+        'investments': {
+            api: '/api/transactions/purchases/',
+            headers: ['Date', 'Fund', 'Investee Company', 'Shares', 'Amount'],
+            render: (item) => `
+                <td class="px-6 py-4 font-medium">${item.trade_date}</td>
+                <td class="px-6 py-4 text-primary font-bold">${item.fund_name || 'Fund #' + item.fund}</td>
+                <td class="px-6 py-4">${item.company_name || 'Company #' + item.investee_company}</td>
+                <td class="px-6 py-4">${Number(item.quantity).toLocaleString()}</td>
+                <td class="px-6 py-4 font-bold text-dark">₹${(item.quantity * item.price).toLocaleString('en-IN', {minimumFractionDigits: 2})}</td>
+            `
+        },
+        'commitments': {
+            api: '/api/transactions/commitments/',
+            headers: ['Date', 'Investor', 'Fund', 'Status', 'Committed Amount'],
+            render: (item) => `
+                <td class="px-6 py-4 font-medium">${item.commitment_date}</td>
+                <td class="px-6 py-4 font-bold text-dark">${item.investor_name || 'Investor #' + item.investor}</td>
+                <td class="px-6 py-4 text-primary">${item.fund_name || 'Fund #' + item.fund}</td>
+                <td class="px-6 py-4"><span class="px-2 py-1 bg-slate-100 text-slate-600 rounded text-[10px] font-black uppercase">Agreed</span></td>
+                <td class="px-6 py-4 font-bold text-dark text-right">₹${Number(item.amount_committed).toLocaleString('en-IN', {minimumFractionDigits: 2})}</td>
+            `
+        },
+        'receipts': {
+            api: '/api/drawdowns/receipts/',
+            headers: ['Date', 'Investor', 'Fund', 'Reference', 'Amount Received'],
+            render: (item) => `
+                <td class="px-6 py-4 font-medium">${item.receipt_date}</td>
+                <td class="px-6 py-4 font-bold text-dark">${item.investor_name || 'Investor #' + item.investor}</td>
+                <td class="px-6 py-4 text-primary">${item.fund_name || 'Fund #' + item.fund}</td>
+                <td class="px-6 py-4 text-xs font-mono text-secondary">${item.reference || '--'}</td>
+                <td class="px-6 py-4 font-bold text-emerald-600 text-right">₹${Number(item.amount_received).toLocaleString('en-IN', {minimumFractionDigits: 2})}</td>
+            `
+        },
+        'distributions': {
+            api: '/api/distributions/',
+            headers: ['Date', 'Investor', 'Fund', 'Gross Amount', 'Net Payout'],
+            render: (item) => `
+                <td class="px-6 py-4 font-medium">${item.paid_date}</td>
+                <td class="px-6 py-4 font-bold text-dark">${item.investor_name || 'Investor #' + item.investor}</td>
+                <td class="px-6 py-4 text-primary">${item.fund_name || 'Fund #' + item.fund}</td>
+                <td class="px-6 py-4 text-slate-500 text-right">₹${Number(item.gross_amount).toLocaleString('en-IN')}</td>
+                <td class="px-6 py-4 font-bold text-rose-600 text-right">₹${Number(item.net_amount || item.gross_amount).toLocaleString('en-IN', {minimumFractionDigits: 2})}</td>
+            `
+        }
+    };
+
+    let currentTab = 'investments';
+
+    async function switchTab(tab) {
+        currentTab = tab;
+        
+        document.querySelectorAll('button[id^="tab-"]').forEach(b => {
+            b.className = "px-4 py-2 text-sm font-bold rounded-lg transition-all text-secondary hover:text-dark";
+        });
+        document.getElementById(`tab-${tab}`).className = "px-4 py-2 text-sm font-bold rounded-lg transition-all bg-indigo-50 text-primary";
+
+        const headersRow = document.getElementById('table-headers');
+        headersRow.innerHTML = CONFIG[tab].headers.map(h => `<th class="px-6 py-4 ${h.includes('Amount') ? 'text-right' : ''}">${h}</th>`).join('');
+
+        const tbody = document.getElementById('ledger-body');
+        tbody.innerHTML = `<tr><td colspan="5" class="px-6 py-10 text-center text-slate-400 italic"><i class="bi bi-arrow-clockwise animate-spin inline-block mr-2"></i> Loading...</td></tr>`;
+
+        try {
+            const data = await api(CONFIG[tab].api);
+            const results = data.results || data;
+
+            if (!results || results.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="5" class="px-6 py-10 text-center text-slate-400 font-medium">No records found for this category.</td></tr>`;
+                return;
+            }
+
+            tbody.innerHTML = results.map(item => `
+                <tr class="hover:bg-slate-50 transition-colors">
+                    ${CONFIG[tab].render(item)}
+                </tr>
+            `).join('');
+
+        } catch (error) {
+            console.error("Ledger Load Error:", error);
+            tbody.innerHTML = `<tr><td colspan="5" class="px-6 py-10 text-center text-rose-500 font-bold">Failed to load data. Please verify API endpoints.</td></tr>`;
+        }
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+        switchTab('investments');
+    });
+</script>
+{% endblock %}

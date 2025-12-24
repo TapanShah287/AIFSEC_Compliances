@@ -1,0 +1,58 @@
+{% extends "base.html" %}
+
+{% block title %}Audit Trail — {{ fund.name }}{% endblock %}
+
+{% block content %}
+<!-- Back Navigation -->
+<div class="flex items-center gap-4 mb-8">
+    <a href="{% url 'funds:fund_detail' fund.pk %}" class="w-10 h-10 flex items-center justify-center bg-white rounded-xl shadow-sm text-secondary hover:text-primary transition border border-slate-100">
+        <i class="bi bi-arrow-left"></i>
+    </a>
+    <div>
+        <h1 class="text-3xl font-black text-dark tracking-tight">Audit Trail</h1>
+        <p class="text-secondary text-xs font-bold uppercase tracking-widest">{{ fund.name }}</p>
+    </div>
+</div>
+
+<!-- Log Table: Clean, readable history of system events -->
+<div class="bg-white rounded-3xl shadow-sm border border-slate-100 overflow-hidden">
+    <table class="w-full text-left border-collapse">
+        <thead>
+            <tr class="bg-slate-50/50 border-b border-slate-100 text-secondary text-[10px] font-black uppercase tracking-widest">
+                <th class="px-8 py-5">Event Timestamp</th>
+                <th class="px-6 py-5">Action Type</th>
+                <th class="px-6 py-5">Initiated By</th>
+                <th class="px-8 py-5 text-right">Transaction Details</th>
+            </tr>
+        </thead>
+        <tbody class="divide-y divide-slate-50">
+            {% for log in logs %}
+            <tr class="hover:bg-slate-50/20 transition-colors">
+                <td class="px-8 py-5 text-secondary font-mono text-xs">{{ log.timestamp|date:"d M Y H:i" }}</td>
+                <td class="px-6 py-5">
+                    <span class="px-2.5 py-1 bg-slate-100 rounded-full text-[9px] font-black uppercase text-slate-600 border border-slate-200">
+                        {{ log.action }}
+                    </span>
+                </td>
+                <td class="px-6 py-5 text-sm font-bold text-dark flex items-center gap-2">
+                    <div class="w-6 h-6 bg-indigo-50 text-indigo-600 rounded-full flex items-center justify-center text-[10px]">
+                        {{ log.user.username|make_list|first|upper }}
+                    </div>
+                    {{ log.user.username }}
+                </td>
+                <td class="px-8 py-5 text-right text-xs text-slate-500 italic leading-relaxed">
+                    {{ log.details }}
+                </td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="4" class="px-8 py-20 text-center">
+                    <i class="bi bi-clock-history text-5xl text-slate-100 block mb-4"></i>
+                    <p class="text-secondary text-sm italic">No system activities recorded for this scheme yet.</p>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

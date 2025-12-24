@@ -1,42 +1,121 @@
 {% extends "base.html" %}
-{% block title %}Add Shareholding for {{ company.name }}{% endblock %}
+
+{% block title %}Add Shareholder - {{ company.name }}{% endblock %}
 
 {% block content %}
-<a href="{% url 'portal-company-detail' company.pk %}" class="inline-block mb-4 px-3 py-1.5 border rounded-lg">&larr; Back to Company</a>
-
-<div class="bg-white rounded-xl shadow p-6">
-  <h1 class="text-2xl font-semibold mb-4">Add Shareholding for {{ company.name }}</h1>
-  <form method="post" novalidate>
-    {% csrf_token %}
-    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-      <div>
-        <label class="block text-sm text-secondary mb-1">Investor</label>
-        {{ form.investor }}
-        <p class="text-xs text-secondary mt-1">Pick an Investor record, or type a holder name below.</p>
-      </div>
-
-      <div>
-        <label class="block text-sm text-secondary mb-1">Holder name</label>
-        {{ form.holder_name }}
-        <p class="text-xs text-secondary mt-1">If not linked to an Investor record.</p>
-      </div>
-
-      <div>
-        <label class="block text-sm text-secondary mb-1">Share type</label>
-        {{ form.share_type }}
-      </div>
-
-      <div>
-        <label class="block text-sm text-secondary mb-1">Number of shares</label>
-        {{ form.number_of_shares }}
-      </div>
-
-      {{ form.investee_company }} {# hidden/readonly; set in view #}
+<div class="max-w-3xl mx-auto">
+    <div class="flex items-center gap-4 mb-8">
+        <a href="{% url 'investee_companies:portal-detail' company.pk %}" class="w-10 h-10 flex items-center justify-center bg-white rounded-xl shadow-sm text-secondary hover:text-primary transition border border-slate-100">
+            <i class="bi bi-arrow-left"></i>
+        </a>
+        <h1 class="text-3xl font-bold text-dark tracking-tight">Add Shareholding</h1>
     </div>
 
-    <div class="mt-6">
-      <button class="px-4 py-2 rounded-lg bg-indigo-600 text-white hover:bg-indigo-700" type="submit">Save</button>
+    <!-- Feedback for Form Errors -->
+    {% if form.errors %}
+    <div class="mb-8 p-6 bg-rose-50 border border-rose-200 text-danger rounded-2xl shadow-sm">
+        <div class="flex items-center gap-3 mb-3">
+            <i class="bi bi-exclamation-octagon-fill text-xl"></i>
+            <h2 class="font-bold">Entry Validation Failed</h2>
+        </div>
+        <ul class="list-disc ml-8 text-sm space-y-1 font-medium">
+            {% for field, errors in form.errors.items %}
+                <!-- FIXED: Changed non-standard 'replace' filter to 'title' -->
+                <li><span class="capitalize">{{ field|title }}</span>: {{ errors|striptags }}</li>
+            {% endfor %}
+        </ul>
     </div>
-  </form>
+    {% endif %}
+
+    <div class="bg-white rounded-3xl shadow-sm border border-slate-100 p-8 md:p-12">
+        <div class="p-5 bg-indigo-50 rounded-2xl border border-indigo-100 mb-10 flex items-start gap-4">
+            <div class="w-10 h-10 bg-white rounded-xl flex items-center justify-center text-primary shadow-sm flex-shrink-0">
+                <i class="bi bi-info-circle"></i>
+            </div>
+            <div>
+                <p class="text-sm text-indigo-900 font-bold mb-1">Recording Equity for {{ company.name }}</p>
+                <p class="text-xs text-indigo-700/80 leading-relaxed">You can link this holding to a registered investor in your registry, or provide a manual holder name if the entity is not yet onboarded.</p>
+            </div>
+        </div>
+
+        <form method="post" class="space-y-8">
+            {% csrf_token %}
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                <div class="space-y-2">
+                    <label class="block text-[10px] font-black text-secondary uppercase tracking-widest">Linked Investor</label>
+                    <div class="relative">
+                        <i class="bi bi-person-badge absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"></i>
+                        {{ form.investor }}
+                    </div>
+                    <p class="text-[10px] text-slate-400 font-medium">Select from your existing LP/Sponsor registry.</p>
+                </div>
+
+                <div class="space-y-2">
+                    <label class="block text-[10px] font-black text-secondary uppercase tracking-widest">Manual Holder Name</label>
+                    <div class="relative">
+                        <i class="bi bi-pencil-square absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"></i>
+                        {{ form.holder_name }}
+                    </div>
+                    <p class="text-[10px] text-slate-400 font-medium">Use if holder is not in the system yet.</p>
+                </div>
+
+                <div class="space-y-2">
+                    <label class="block text-[10px] font-black text-secondary uppercase tracking-widest">Share Class / Capital</label>
+                    <div class="relative">
+                        <i class="bi bi-layers absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 z-10"></i>
+                        {{ form.share_capital }}
+                    </div>
+                    <p class="text-[10px] text-slate-400 font-medium">e.g. Series A CCPS, Common Equity.</p>
+                </div>
+
+                <div class="space-y-2">
+                    <label class="block text-[10px] font-black text-secondary uppercase tracking-widest">Number of Shares</label>
+                    <div class="relative">
+                        <i class="bi bi-hash absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"></i>
+                        {{ form.number_of_shares }}
+                    </div>
+                </div>
+            </div>
+
+            <div class="pt-10 border-t border-slate-50 flex flex-col-reverse md:flex-row justify-end gap-3">
+                <a href="{% url 'investee_companies:portal-detail' company.pk %}" class="px-8 py-3 text-secondary font-bold hover:bg-slate-50 rounded-xl transition text-center">
+                    Discard
+                </a>
+                <button type="submit" class="px-10 py-3 bg-primary text-white font-bold rounded-xl shadow-xl shadow-primary/20 hover:bg-indigo-700 transition flex items-center justify-center">
+                    Register Holding <i class="bi bi-check-circle-fill ml-2"></i>
+                </button>
+            </div>
+        </form>
+    </div>
 </div>
+
+<style>
+    /* Aligning Django widgets with the Indigo UI theme */
+    select, input[type="text"], input[type="number"] {
+        width: 100%;
+        padding: 0.85rem 1rem;
+        padding-left: 2.75rem;
+        background-color: #f8fafc;
+        border: 1px solid #f1f5f9;
+        border-radius: 1rem;
+        font-weight: 600;
+        font-size: 0.875rem;
+        color: #0f172a;
+        outline: none;
+        transition: all 0.2s;
+        appearance: none;
+    }
+    input:focus, select:focus {
+        background-color: #fff;
+        border-color: #4f46e5;
+        box-shadow: 0 0 0 4px rgba(79, 70, 229, 0.05);
+    }
+    select {
+        background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%2364748b' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e");
+        background-repeat: no-repeat;
+        background-position: right 1rem center;
+        background-size: 1.5em 1.5em;
+    }
+</style>
 {% endblock %}

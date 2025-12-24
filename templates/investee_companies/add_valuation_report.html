@@ -1,52 +1,71 @@
 {% extends 'base.html' %}
-{% extends "base.html" %}
-{% block title %}Add Valuation for {{ company.name }}{% endblock %}
+{% block title %}Add Valuation Report - {{ company.name }}{% endblock %}
+
 {% block content %}
-<div class="max-w-2xl mx-auto">
-  <div class="flex justify-between items-center mb-6">
-    <h1 class="text-2xl font-semibold">Add Valuation Report for {{ company.name }}</h1>
-    <a href="{% url 'investee_companies:investee_company_detail' company.pk %}" class="px-3 py-2 text-sm border rounded-lg hover:bg-slate-100">← Back to Company</a>
-  </div>
-
-  <form method="post" enctype="multipart/form-data" class="bg-white shadow-lg rounded-xl p-6 space-y-8 border border-slate-200">
-    {% csrf_token %}
-    <div class="space-y-4">
-      <h2 class="text-lg font-medium text-slate-800">Report Details</h2>
-      <div>
-        <label class="block text-sm font-medium text-slate-700 mb-1">Valuation date</label>
-        {{ form.valuation_date }}
-      </div>
-      <div>
-        <label class="block text-sm font-medium text-slate-700 mb-1">Report file (Optional)</label>
-        {{ form.report_file }}
-      </div>
+<div class="max-w-3xl mx-auto">
+    <div class="flex items-center gap-4 mb-8">
+        <!-- FIXED: Using consistent namespaced URL 'portal-detail' -->
+        <a href="{% url 'investee_companies:portal-detail' company.pk %}" class="w-10 h-10 flex items-center justify-center bg-white rounded-xl shadow-sm text-secondary hover:text-primary transition border border-slate-100">
+            <i class="bi bi-arrow-left"></i>
+        </a>
+        <h1 class="text-3xl font-bold text-dark tracking-tight">Add Valuation Report</h1>
     </div>
 
-    <div class="space-y-4 border-t pt-6">
-      <h2 class="text-lg font-medium text-slate-800">Per Share Values</h2>
-      {{ formset.management_form }}
-      {% for form in formset %}
-      <div class="grid grid-cols-2 gap-4 items-start p-4 border rounded-md bg-slate-50">
-        <div class="font-medium text-sm text-slate-700 pt-2">
-          <p>{{ form.initial.share_capital }}</p>
-          {{ form.share_capital }}
+    {% if form.errors or formset.errors %}
+    <div class="mb-8 p-6 bg-rose-50 border border-rose-200 text-danger rounded-2xl">
+        <h2 class="font-bold text-sm mb-2 uppercase tracking-widest">Validation Errors</h2>
+        <ul class="list-disc ml-8 text-xs space-y-1">
+            {% for field, errors in form.errors.items %}<li>{{ errors|striptags }}</li>{% endfor %}
+            {% for f in formset %}{% for field, errors in f.errors.items %}<li>{{ f.initial_class_name }}: {{ errors|striptags }}</li>{% endfor %}{% endfor %}
+        </ul>
+    </div>
+    {% endif %}
+
+    <form method="post" enctype="multipart/form-data" class="bg-white rounded-2xl shadow-sm border border-slate-100 p-8 space-y-10">
+        {% csrf_token %}
+        
+        <div class="space-y-6">
+            <div>
+                <label class="block text-xs font-black text-secondary uppercase tracking-widest mb-2">Valuation Date</label>
+                {{ form.valuation_date }}
+            </div>
+            <div>
+                <label class="block text-xs font-black text-secondary uppercase tracking-widest mb-2">Report File (PDF)</label>
+                {{ form.report_file }}
+            </div>
         </div>
-        <div>
-          <label class="block text-sm font-medium text-slate-600 mb-1">Per Share Value (₹)</label>
-          {{ form.per_share_value }}
-          {% for error in form.per_share_value.errors %}
-            <p class="text-xs text-rose-600 mt-1">{{ error }}</p>
-          {% endfor %}
-        </div>
-      </div>
-      {% empty %}
-      <p class="text-sm text-slate-500 text-center p-4">This company has no share capital defined. Please add share capital before adding a valuation.</p>
-      {% endfor %}
-    </div>
 
-    <div class="mt-6 pt-4 border-t">
-      <button type="submit" class="px-4 py-2 bg-slate-800 text-white font-semibold rounded-lg shadow hover:bg-slate-900 text-sm">Save Valuation</button>
-    </div>
-  </form>
+        <div class="space-y-4">
+            <h2 class="text-xs font-black text-secondary uppercase tracking-widest border-b border-slate-50 pb-2">Per Share Valuations</h2>
+            {{ formset.management_form }}
+            {% for f in formset %}
+            <div class="p-5 bg-slate-50 rounded-xl border border-slate-100 flex items-center justify-between gap-6">
+                <div>
+                    <p class="font-bold text-dark">{{ f.initial_class_name|default:"Common Shares" }}</p>
+                    <p class="text-[10px] text-secondary uppercase font-bold">Class Assignment</p>
+                    <div class="hidden">{{ f.share_capital }}{{ f.id }}</div>
+                </div>
+                <div class="w-48">
+                    <label class="block text-[10px] font-black text-secondary uppercase mb-1">Price (₹)</label>
+                    {{ f.per_share_value }}
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+
+        <div class="pt-8 border-t border-slate-50 flex justify-end gap-3">
+            <a href="{% url 'investee_companies:portal-detail' company.pk %}" class="px-6 py-2.5 text-secondary font-bold hover:bg-slate-50 rounded-xl transition">Cancel</a>
+            <button type="submit" class="px-8 py-2.5 bg-primary text-white font-bold rounded-xl shadow-lg shadow-primary/20 hover:bg-indigo-700 transition">
+                Save Report
+            </button>
+        </div>
+    </form>
 </div>
+
+<style>
+    input[type="text"], input[type="number"], input[type="date"], select {
+        width: 100%; padding: 0.75rem 1rem; background-color: #f8fafc; border: 1px solid #f1f5f9; border-radius: 0.75rem; font-weight: 500; outline: none;
+    }
+    input:focus { border-color: #4f46e5; box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.05); }
+</style>
 {% endblock %}

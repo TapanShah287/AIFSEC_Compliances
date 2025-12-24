@@ -1,0 +1,94 @@
+{% extends "base.html" %}
+
+{% block title %}Log Stewardship Engagement • AIF SEC{% endblock %}
+
+{% block content %}
+<div class="max-w-2xl mx-auto">
+    <!-- Header -->
+    <div class="flex items-center gap-4 mb-8">
+        <a href="{% url 'funds:fund_detail' fund.pk %}" class="w-10 h-10 flex items-center justify-center bg-white rounded-xl shadow-sm text-secondary hover:text-primary transition border border-slate-100">
+            <i class="bi bi-arrow-left"></i>
+        </a>
+        <div>
+            <h1 class="text-3xl font-black text-dark tracking-tight">Stewardship Log</h1>
+            <p class="text-secondary text-sm font-medium">{{ fund.name }}</p>
+        </div>
+    </div>
+
+    <!-- 2025 IFSCA Stewardship Code Info -->
+    <div class="bg-indigo-900 rounded-3xl p-8 mb-8 text-white relative overflow-hidden shadow-xl shadow-indigo-100">
+        <div class="relative z-10">
+            <h3 class="font-bold text-lg mb-2 flex items-center gap-2">
+                <i class="bi bi-shield-shaded"></i> IFSCA Stewardship Code 2025
+            </h3>
+            <p class="text-indigo-100 text-xs leading-relaxed opacity-90">
+                As per the mandatory disclosure requirements for GIFT City funds, all board interventions, voting decisions, and ESG engagements with investee companies must be recorded and disclosed annually.
+            </p>
+        </div>
+        <div class="absolute -bottom-10 -right-10 w-32 h-32 bg-white/10 rounded-full blur-2xl"></div>
+    </div>
+
+    <!-- Engagement Form -->
+    <div class="bg-white rounded-3xl shadow-sm border border-slate-100 p-8">
+        <form method="post" class="space-y-6" onsubmit="return handleFormSubmit(this)">
+            {% csrf_token %}
+            
+            {% if form.non_field_errors %}
+            <div class="p-4 bg-rose-50 border border-rose-100 rounded-xl text-rose-700 text-xs font-bold">
+                {{ form.non_field_errors }}
+            </div>
+            {% endif %}
+
+            {% for field in form %}
+            <div>
+                <label for="{{ field.id_for_label }}" class="block text-[10px] font-black text-secondary uppercase tracking-widest mb-2">
+                    {{ field.label }} {% if field.field.required %}<span class="text-rose-500">*</span>{% endif %}
+                </label>
+                {{ field }}
+                {% if field.help_text %}
+                <p class="text-[10px] text-slate-400 mt-1 italic">{{ field.help_text }}</p>
+                {% endif %}
+                {% if field.errors %}
+                <p class="text-[10px] text-rose-500 mt-1 font-bold">{{ field.errors.0 }}</p>
+                {% endif %}
+            </div>
+            {% endfor %}
+
+            <div class="pt-6 border-t border-slate-50 flex justify-end gap-3">
+                <a href="{% url 'funds:fund_detail' fund.pk %}" class="px-6 py-3 text-secondary font-bold text-sm hover:bg-slate-50 rounded-2xl transition">
+                    Cancel
+                </a>
+                <button type="submit" id="submitBtn" class="bg-primary text-white px-8 py-3 rounded-2xl font-black text-sm shadow-xl shadow-indigo-100 hover:bg-indigo-700 transition flex items-center gap-2">
+                    <span>Log Engagement</span>
+                    <i class="bi bi-journal-check"></i>
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Re-using optimized styling from Canvas -->
+<style>
+    select, input[type="text"], input[type="number"], input[type="date"], textarea {
+        width: 100%; padding: 0.875rem 1.25rem; background-color: #f8fafc;
+        border: 1px solid #f1f5f9; border-radius: 1rem; font-size: 0.875rem;
+        outline: none; transition: all 0.2s; font-weight: 600; color: #1e293b;
+    }
+    select:focus, input:focus, textarea:focus { border-color: #6366f1; background-color: #fff; box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.1); }
+</style>
+
+<script>
+    function handleFormSubmit(form) {
+        const btn = form.querySelector('#submitBtn');
+        const text = btn.querySelector('span');
+        const icon = btn.querySelector('i');
+        
+        btn.disabled = true;
+        btn.classList.add('opacity-50', 'cursor-not-allowed');
+        text.innerText = "Recording Disclosure...";
+        icon.className = "bi bi-arrow-repeat animate-spin";
+        
+        return true;
+    }
+</script>
+{% endblock %}

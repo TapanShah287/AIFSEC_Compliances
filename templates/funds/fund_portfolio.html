@@ -3,42 +3,53 @@
 {% block title %}Portfolio — {{ fund.name }}{% endblock %}
 
 {% block content %}
-<h1 class="text-2xl font-semibold mb-6">Portfolio — {{ fund.name }}</h1>
-
-<div class="mb-4">
-  <a href="{% url 'fund_detail' fund.pk %}" class="px-3 py-2 text-sm border rounded-lg hover:bg-slate-100">← Back to Fund</a>
+<div class="flex items-center justify-between mb-8">
+    <div class="flex items-center gap-4">
+        <a href="{% url 'funds:fund_detail' fund.pk %}" class="w-10 h-10 flex items-center justify-center bg-white rounded-xl shadow-sm text-secondary hover:text-primary transition border border-slate-100">
+            <i class="bi bi-arrow-left"></i>
+        </a>
+        <h1 class="text-3xl font-bold text-dark">Portfolio: {{ fund.name }}</h1>
+    </div>
 </div>
 
-<div class="bg-white shadow rounded-lg overflow-hidden border border-slate-200">
-  <h2 class="text-sm font-semibold px-4 py-3 border-b bg-slate-50 text-slate-700 uppercase">
-    Current Holdings
-  </h2>
-
-  {% if rows %}
-  <div class="overflow-x-auto">
-    <table class="min-w-full text-sm">
-      <thead class="bg-slate-100 text-slate-700 uppercase text-xs">
-        <tr>
-          <th class="px-4 py-2 text-left">Investee Company</th>
-          <th class="px-4 py-2 text-right">Units Held</th>
-          <th class="px-4 py-2 text-right">Total Cost</th>
-          <th class="px-4 py-2 text-right">Avg Price</th>
-        </tr>
-      </thead>
-      <tbody>
-        {% for r in rows %}
-        <tr class="border-t hover:bg-slate-50">
-          <td class="px-4 py-2">{{ r.company_name }}</td>
-          <td class="px-4 py-2 text-right">{{ r.units }}</td>
-          <td class="px-4 py-2 text-right">{{ r.cost }}</td>
-          <td class="px-4 py-2 text-right">{{ r.avg_price }}</td>
-        </tr>
-        {% endfor %}
-      </tbody>
+<div class="bg-white rounded-3xl shadow-sm border border-slate-100 overflow-hidden">
+    <table class="w-full text-left border-collapse">
+        <thead>
+            <tr class="bg-slate-50/50 text-secondary font-bold uppercase text-[10px] tracking-widest border-b border-slate-50">
+                <th class="px-8 py-5">Investee Company</th>
+                <th class="px-6 py-5 text-right">Units Held</th>
+                <th class="px-6 py-5 text-right">Total Invested</th>
+                <th class="px-6 py-5 text-right">Last Valuation</th>
+                <th class="px-8 py-5 text-right">Action</th>
+            </tr>
+        </thead>
+        <tbody class="divide-y divide-slate-50">
+            {% for purchase in purchases %}
+            <tr class="hover:bg-slate-50/50 transition-colors group">
+                <td class="px-8 py-5">
+                    <div class="font-bold text-dark">{{ purchase.investee_company.name }}</div>
+                    <div class="text-[10px] text-slate-400">Trade Date: {{ purchase.trade_date|date:"d M Y" }}</div>
+                </td>
+                <td class="px-6 py-5 text-right font-mono text-sm">{{ purchase.quantity|floatformat:0 }}</td>
+                <td class="px-6 py-5 text-right font-bold text-dark">₹{{ purchase.amount_invested|floatformat:2 }}</td>
+                <td class="px-6 py-5 text-right">
+                    <span class="px-3 py-1 bg-emerald-50 text-emerald-700 rounded-full text-[10px] font-black uppercase">At Cost</span>
+                </td>
+                <td class="px-8 py-5 text-right">
+                    <button class="w-8 h-8 rounded-lg bg-slate-50 text-slate-400 hover:text-primary hover:bg-white transition flex items-center justify-center mx-auto lg:ml-auto">
+                        <i class="bi bi-pencil-square"></i>
+                    </button>
+                </td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="5" class="px-8 py-20 text-center">
+                    <i class="bi bi-box-seam text-5xl text-slate-100 block mb-4"></i>
+                    <p class="text-secondary font-medium italic">No active holdings in this portfolio.</p>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
     </table>
-  </div>
-  {% else %}
-  <div class="px-4 py-6 text-center text-slate-500">No current holdings.</div>
-  {% endif %}
 </div>
 {% endblock %}

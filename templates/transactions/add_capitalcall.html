@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+
+{% block title %}Raise Capital Call - {{ fund.name }}{% endblock %}
+
+{% block content %}
+<div class="max-w-xl mx-auto">
+    <div class="mb-6">
+        <a href="{% url 'funds:fund_detail' fund.pk %}" class="text-sm font-bold text-secondary hover:text-primary transition">
+            <i class="bi bi-arrow-left mr-1"></i> Back to Fund
+        </a>
+    </div>
+
+    <div class="bg-white rounded-3xl shadow-sm border border-slate-100 overflow-hidden">
+        <div class="p-8 border-b border-slate-50 bg-amber-50/50">
+            <h1 class="text-2xl font-bold text-dark">Raise Capital Call</h1>
+            <p class="text-secondary text-sm mt-1">Request funds from a committed investor.</p>
+        </div>
+
+        <form method="post" class="p-8 space-y-6">
+            {% csrf_token %}
+            {% if form.non_field_errors %}
+                <div class="p-4 bg-rose-50 text-rose-600 rounded-xl text-sm font-bold">{{ form.non_field_errors }}</div>
+            {% endif %}
+
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-[10px] font-black text-secondary uppercase tracking-widest mb-2">Investor</label>
+                    {{ form.investor }}
+                    {{ form.investor.errors }}
+                </div>
+                <div>
+                    <label class="block text-[10px] font-black text-secondary uppercase tracking-widest mb-2">Amount Called (₹)</label>
+                    {{ form.amount_called }}
+                    {{ form.amount_called.errors }}
+                </div>
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-[10px] font-black text-secondary uppercase tracking-widest mb-2">Call Date</label>
+                        {{ form.call_date }}
+                    </div>
+                    <div>
+                        <label class="block text-[10px] font-black text-secondary uppercase tracking-widest mb-2">Due Date</label>
+                        {{ form.due_date }}
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-[10px] font-black text-secondary uppercase tracking-widest mb-2">Reference / Batch ID</label>
+                    {{ form.reference }}
+                </div>
+            </div>
+
+            <div class="pt-4">
+                <button type="submit" class="w-full py-3 bg-amber-500 hover:bg-amber-600 text-white font-bold rounded-xl shadow-lg shadow-amber-200 transition">
+                    Send Capital Call
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

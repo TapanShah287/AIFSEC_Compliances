@@ -1,160 +1,152 @@
-# funds/models.py
 from django.db import models
-from django.db.models import Sum
 from django.utils import timezone
 from django.conf import settings
 from decimal import Decimal
+from django.core.validators import MinValueValidator
 
 class Fund(models.Model):
+    # --- Choices ---
     FUND_CATEGORY_CHOICES = [
-        ('CAT_I', 'Category I'),
-        ('CAT_II', 'Category II'),
-        ('CAT_III', 'Category III'),
+        ('CAT_I', 'Category I (Venture/Social)'),
+        ('CAT_II', 'Category II (PE/Debt)'),
+        ('CAT_III', 'Category III (Hedge/Public)'),
     ]
 
-    name = models.CharField(max_length=255)
-    sebi_registration_number = models.CharField(max_length=50, unique=True)
-    category = models.CharField(max_length=10, choices=FUND_CATEGORY_CHOICES)
-    corpus = models.DecimalField(max_digits=18, decimal_places=2, help_text="Total fund corpus in INR")
-    date_of_inception = models.DateField(default=timezone.now)
+    JURISDICTION_CHOICES = [
+        ('DOMESTIC', 'SEBI (Domestic)'),
+        ('IFSC', 'IFSCA (GIFT City)'),
+    ]
 
-    manager = models.ForeignKey(
-        'manager_entities.ManagerEntity',
-        on_delete=models.PROTECT,
+    SCHEME_TYPE_CHOICES = [
+        ('MAIN', 'Main AIF Scheme'),
+        ('CIV', 'Co-Investment Vehicle (CIV)'),
+        ('ANGEL', 'Angel Fund Segment'),
+        ('AI_ONLY', 'Accredited Investor Only Fund'), # New 2025 Category
+    ]
+
+    # --- Basic Info ---
+    name = models.CharField(max_length=255)
+    sebi_registration_number = models.CharField(max_length=100, unique=True, blank=True, null=True)
+    
+    # --- Strategy & Structure ---
+    category = models.CharField(max_length=20, choices=FUND_CATEGORY_CHOICES, default='CAT_II')
+    jurisdiction = models.CharField(max_length=20, choices=JURISDICTION_CHOICES, default='DOMESTIC')
+    scheme_type = models.CharField(max_length=20, choices=SCHEME_TYPE_CHOICES, default='MAIN')
+    
+    # Financials
+    # We use string reference to 'currencies.Currency' to avoid circular imports
+    currency = models.ForeignKey(
+        'currencies.Currency', 
+        on_delete=models.PROTECT, 
         related_name='funds',
-        help_text='Fund Manager Entity',
-        null=True, blank=True,
+        default=1, # Ensure you have an INR record with ID 1
+        help_text="Functional currency of the fund"
+    )
+    
+    corpus = models.DecimalField(
+        max_digits=20, decimal_places=2, 
+        help_text="Target Fund Size",
+        default=Decimal('0.00')
+    )
+    sponsor_commitment = models.DecimalField(
+        max_digits=20, decimal_places=2,
+        help_text="Manager's Skin in the Game",
+        default=Decimal('0.00')
     )
 
-    def __str__(self):
-        return self.name
+    # --- Relationships ---
+    manager = models.ForeignKey(
+        settings.AUTH_USER_MODEL, 
+        on_delete=models.SET_NULL, 
+        null=True, 
+        related_name='managed_funds'
+    )
+    # Self-referential for CIVs (Co-Investment Vehicles link to Main Fund)
+    parent_fund = models.ForeignKey(
+        'self', 
+        on_delete=models.CASCADE, 
+        null=True, blank=True, 
+        related_name='child_schemes'
+    )
 
-    # --- Properties for Aggregated Financial Data ---
+    # --- Timeline ---
+    date_of_inception = models.DateField(default=timezone.now)
+    target_close_date = models.DateField(null=True, blank=True)
+    is_active = models.BooleanField(default=True)
+
+    def __str__(self):
+        return f"{self.name} ({self.get_category_display()})"
+
     @property
     def total_commitments(self):
-        from transactions.models import InvestorCommitment
-        return InvestorCommitment.objects.filter(fund=self).aggregate(
-            total=models.Sum("amount_committed")
-        )["total"] or Decimal("0.00")
+        """Aggregate total committed capital from investors."""
+        # This requires the 'transactions' app to be loaded
+        return self.commitments.aggregate(total=models.Sum('amount_committed'))['total'] or Decimal('0.00')
 
-    @property
-    def investor_count(self):
-        from transactions.models import InvestorCommitment
-        return InvestorCommitment.objects.filter(fund=self).values("investor").distinct().count()
+
+class NavSnapshot(models.Model):
+    """
+    Quarterly/Monthly NAV records for Performance Reporting.
+    """
+    fund = models.ForeignKey(Fund, on_delete=models.CASCADE, related_name='nav_history')
+    as_on_date = models.DateField()
     
-    @property
-    def total_capital_called(self):
-        return self.capital_calls.aggregate(total=Sum('amount_called'))['total'] or Decimal('0.00')
+    nav_per_unit = models.DecimalField(max_digits=15, decimal_places=4)
+    aum = models.DecimalField(max_digits=20, decimal_places=2, help_text="Assets Under Management")
+    units_outstanding = models.DecimalField(max_digits=18, decimal_places=4)
+    
+    is_first_close_nav = models.BooleanField(default=False, help_text="Is this the NAV at First Close?")
+    created_at = models.DateTimeField(auto_now_add=True)
 
-    @property
-    def total_drawn(self):
-        return self.drawdown_receipts.aggregate(total=Sum('amount_received'))['total'] or Decimal('0.00')
-        
-    @property
-    def total_distributed(self):
-        return self.distributions.aggregate(total=Sum('amount_distributed'))['total'] or Decimal('0.00')
+    class Meta:
+        ordering = ['-as_on_date']
+        unique_together = ['fund', 'as_on_date']
 
-    @property
-    def total_units_issued(self):
-        return self.total_commitment
-
-    @property
-    def total_current_value(self):
-        total_value = Decimal('0.00')
-        portfolio = self.get_portfolio_summary()
-        for holding in portfolio:
-            if holding.get('investee_company'):
-                latest_price = holding['investee_company'].latest_valuation or Decimal('0.00')
-                total_value += holding['units'] * latest_price
-        return total_value
-
-    @property
-    def nav_per_unit(self):
-        if self.total_units_issued > 0:
-            return self.total_current_value / self.total_units_issued
-        return Decimal('0.00')
-
-    def get_portfolio_summary(self):
-        from transactions.models import PurchaseTransaction, RedemptionTransaction
-        from investee_companies.models import InvesteeCompany
-        
-        portfolio = {}
-        
-        purchases = PurchaseTransaction.objects.filter(fund=self).select_related('investee_company').values(
-            'investee_company_id', 'investee_company__name'
-        ).annotate(total_quantity=Sum('quantity'))
-        
-        for p in purchases:
-            company_id = p['investee_company_id']
-            portfolio[company_id] = {
-                'name': p['investee_company__name'],
-                'units': p['total_quantity']
-            }
-
-        redemptions = RedemptionTransaction.objects.filter(fund=self).values(
-            'investee_company_id'
-        ).annotate(total_quantity=Sum('quantity'))
-
-        for r in redemptions:
-            company_id = r['investee_company_id']
-            if company_id in portfolio:
-                portfolio[company_id]['units'] -= r['total_quantity']
-        
-        # Fetch investee company objects to access valuation data
-        company_ids = list(portfolio.keys())
-        companies = InvesteeCompany.objects.in_bulk(company_ids)
-
-        summary = []
-        for cid, data in portfolio.items():
-            if data['units'] > 0:
-                summary.append({
-                    'company': data['name'],
-                    'units': data['units'],
-                    'investee_company': companies.get(cid) # Attach the object
-                })
-        return summary
+    def __str__(self):
+        return f"{self.fund.name} - {self.as_on_date}: {self.nav_per_unit}"
 
 
 class Document(models.Model):
+    """
+    Fund documents and Investor-specific compliance docs (Demat Advice).
+    """
     fund = models.ForeignKey(Fund, on_delete=models.CASCADE, related_name='documents')
-    investor = models.ForeignKey('investors.Investor', on_delete=models.CASCADE, related_name='fund_documents', null=True, blank=True)
+    investor = models.ForeignKey(
+        'investors.Investor', 
+        on_delete=models.CASCADE, 
+        related_name='fund_documents', 
+        null=True, blank=True
+    )
     title = models.CharField(max_length=255)
-    file = models.FileField(upload_to='documents/')
+    file = models.FileField(upload_to='fund_documents/%Y/%m/')
     uploaded_at = models.DateTimeField(auto_now_add=True)
+    
+    # 2025 Compliance
+    is_demat_advice = models.BooleanField(default=False)
 
     def __str__(self):
         return self.title
 
-class NAVHistory(models.Model):
-    fund = models.ForeignKey(
-        "funds.Fund",
-        on_delete=models.CASCADE,
-        related_name="nav_history"
-    )
-    date = models.DateField(default=timezone.now)
-    nav_per_unit = models.DecimalField(
-        max_digits=18, decimal_places=4,
-        help_text="NAV per unit"
-    )
-    total_aum = models.DecimalField(
-        max_digits=18, decimal_places=2,
-        help_text="Total Assets Under Management",
-        default=Decimal("0.00")
-    )
 
-    class Meta:
-        unique_together = ("fund", "date")
-        ordering = ["-date"]
+class StewardshipEngagement(models.Model):
+    """
+    Mandatory for IFSCA Funds & optional for SEBI Cat-II/III.
+    Tracks 'Active Engagement' with portfolio companies.
+    """
+    STATUS_CHOICES = [
+        ('OPEN', 'Open/Ongoing'),
+        ('RESOLVED', 'Resolved/Closed'),
+        ('ESCALATED', 'Escalated to Board'),
+    ]
 
-    def __str__(self):
-        return f"{self.fund.name} NAV on {self.date}: {self.nav_per_unit}"
-
-
-class ActivityLog(models.Model):
-    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True)
-    action = models.CharField(max_length=255)
-    timestamp = models.DateTimeField(auto_now_add=True)
-    details = models.TextField(blank=True, null=True)
+    fund = models.ForeignKey(Fund, on_delete=models.CASCADE, related_name='stewardship_logs')
+    investee_company = models.ForeignKey('investee_companies.InvesteeCompany', on_delete=models.CASCADE)
+    
+    engagement_date = models.DateField(default=timezone.now)
+    topic = models.CharField(max_length=255, help_text="e.g. ESG, Governance, Strategy")
+    description = models.TextField()
+    outcome = models.TextField(blank=True, help_text="Result of the intervention")
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='OPEN')
 
     def __str__(self):
-        return f'{self.user} - {self.action} at {self.timestamp}'
+        return f"{self.fund.name} -> {self.investee_company.name}: {self.topic}"

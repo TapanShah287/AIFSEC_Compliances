@@ -1,207 +1,150 @@
-# transactions/models.py
-import hashlib
 from django.db import models
-from django.db.models import Sum, Q
-from decimal import Decimal
 from django.utils import timezone
+from decimal import Decimal
 from django.core.exceptions import ValidationError
-from functools import cached_property
 
-# Imports from other apps
-from funds.models import Fund
-from investee_companies.models import InvesteeCompany, Shareholding
-
-
-class Transaction(models.Model):
-    def __str__(self):
-        return f"Purchase of {self.quantity} shares in {self.investee_company.name} by {self.fund.name}"
-
-
-class PurchaseTransaction(models.Model):
-    fund = models.ForeignKey(Fund, on_delete=models.CASCADE, related_name='purchases')
-    investee_company = models.ForeignKey(InvesteeCompany, on_delete=models.CASCADE, related_name='purchases_by_fund')
-    share_capital = models.ForeignKey(Shareholding, on_delete=models.SET_NULL, null=True, blank=True)
-
-    quantity = models.DecimalField(max_digits=18, decimal_places=4, verbose_name="Qty of Shares")
-    purchase_rate = models.DecimalField(max_digits=18, decimal_places=4)
-    face_value = models.DecimalField(max_digits=18, decimal_places=4, blank=True, null=True)
-    purchase_date = models.DateField(default=timezone.now)
-
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
-    status = models.CharField(max_length=20, choices=(
-        ('draft','Draft'), ('posted','Posted'), ('reversed','Reversed')
-    ), default='posted')
-    import_batch_id = models.CharField(max_length=64, null=True, blank=True, db_index=True)
-    external_ref = models.CharField(max_length=128, null=True, blank=True, db_index=True)
-    notes = models.TextField(null=True, blank=True)
-    fees = models.DecimalField(max_digits=18, decimal_places=4, default=0)
-    taxes = models.DecimalField(max_digits=18, decimal_places=4, default=0)
-    currency = models.CharField(max_length=3, default='INR')
-    fx_rate = models.DecimalField(max_digits=18, decimal_places=6, default=1)
-    unique_hash = models.CharField(max_length=64, db_index=True, editable=False)
-
-    @property
-    def amount(self):
-        return (self.quantity or 0) * (self.purchase_rate or 0)
-
-    def save(self, *args, **kwargs):
-        self.full_clean()
-        super().save(*args, **kwargs)
-
-    class Meta:
-        ordering = ['-purchase_date', '-id']
+class TransactionBase(models.Model):
+    """
+    Abstract base class for all AIF transactions.
+    Updated for Multi-Currency support: tracks the original currency 
+    and the exchange rate to the Fund's functional currency.
+    """
+    fund = models.ForeignKey('funds.Fund', on_delete=models.CASCADE)
     
-    def __str__(self):
-        return f"Purchase of {self.quantity} shares in {self.investee_company.name} by {self.fund.name}"
-
-
-class RedemptionTransaction(models.Model):
-    fund = models.ForeignKey(Fund, on_delete=models.CASCADE, related_name='redemptions')
-    investee_company = models.ForeignKey(InvesteeCompany, on_delete=models.CASCADE, related_name='redemptions_by_fund')
-    share_capital = models.ForeignKey(Shareholding, on_delete=models.SET_NULL, null=True, blank=True)
-
-    quantity = models.DecimalField(max_digits=18, decimal_places=4, verbose_name="Qty of Shares")
-    redemption_rate = models.DecimalField(max_digits=18, decimal_places=4)
-    redemption_date = models.DateField(default=timezone.now)
+    # The currency in which the actual cash flow/trade occurred
+    transaction_currency = models.ForeignKey(
+        'currencies.Currency', 
+        on_delete=models.PROTECT,
+        null=True,
+        blank=True,
+        help_text="Currency of the actual cash flow/trade"
+    )
+    
+    # Rate used to convert Transaction Currency -> Fund Functional Currency
+    exchange_rate = models.DecimalField(
+        max_digits=20, 
+        decimal_places=10, 
+        default=Decimal('1.0000000000'),
+        help_text="Exchange rate to convert to Fund's functional currency"
+    )
 
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
-    status = models.CharField(max_length=20, choices=(
-        ('draft','Draft'), ('posted','Posted'), ('reversed','Reversed')
-    ), default='posted')
-    import_batch_id = models.CharField(max_length=64, null=True, blank=True, db_index=True)
-    external_ref = models.CharField(max_length=128, null=True, blank=True, db_index=True)
-    notes = models.TextField(null=True, blank=True)
-    fees = models.DecimalField(max_digits=18, decimal_places=4, default=0)
-    taxes = models.DecimalField(max_digits=18, decimal_places=4, default=0)
-    currency = models.CharField(max_length=3, default='INR')
-    fx_rate = models.DecimalField(max_digits=18, decimal_places=6, default=1)
-
-    @property
-    def amount(self):
-        return (self.quantity or 0) * (self.redemption_rate or 0)
-
-    @cached_property
-    def cost_basis(self):
-        from .utils import calculate_fifo_cost_basis
-        if not self.pk:
-            return Decimal('0.0')
-        return calculate_fifo_cost_basis(self)
-
-    @cached_property
-    def capital_gain(self):
-        return self.amount - self.cost_basis
-
-    def clean(self):
-        if self.quantity and self.quantity <= 0:
-            raise ValidationError({'quantity': 'Quantity must be a positive number.'})
-
-    def save(self, *args, **kwargs):
-        self.full_clean()
-        super().save(*args, **kwargs)
-
-    class Meta:
-        ordering = ['-redemption_date', '-id']
-
-    def __str__(self):
-        return f"Redemption of {self.quantity} shares from {self.investee_company.name} by {self.fund.name}"
-
-
-class InvestorCommitment(models.Model):
-    fund = models.ForeignKey('funds.Fund', on_delete=models.CASCADE, related_name='commitments')
-    investor = models.ForeignKey('investors.Investor', on_delete=models.CASCADE, related_name='commitments')
-    commitment_date = models.DateField()
-    amount_committed = models.DecimalField(max_digits=18, decimal_places=2)
-
-    class Meta:
-        ordering = ['-commitment_date']
-
-    def __str__(self):
-        return f"Commitment of {self.amount_committed} by {self.investor} to {self.fund}"
-
-
-class CapitalCall(models.Model):
-    fund = models.ForeignKey('funds.Fund', on_delete=models.CASCADE, related_name='capital_calls')
-    investor = models.ForeignKey('investors.Investor', on_delete=models.CASCADE, related_name='capital_calls')
-    call_date = models.DateField()
-    amount_called = models.DecimalField(max_digits=18, decimal_places=2)
-    reference = models.CharField(max_length=100, blank=True, null=True)
-
-    class Meta:
-        ordering = ['-call_date']
-
-    def __str__(self):
-        return f"Capital Call of {self.amount_called} from {self.investor} on {self.call_date}"
-
-
-class DrawdownReceipt(models.Model):
-    fund = models.ForeignKey('funds.Fund', on_delete=models.CASCADE, related_name='drawdown_receipts')
-    investor = models.ForeignKey('investors.Investor', on_delete=models.CASCADE, related_name='drawdown_receipts')
-    receipt_date = models.DateField()
-    amount_received = models.DecimalField(max_digits=18, decimal_places=2)
-    reference = models.CharField(max_length=100, blank=True, null=True)
-
-    class Meta:
-        ordering = ['-receipt_date']
-
-    def __str__(self):
-        return f"Drawdown Receipt of {self.amount_received} from {self.investor} on {self.receipt_date}"
-
-
-class Distribution(models.Model):
-    fund = models.ForeignKey('funds.Fund', on_delete=models.CASCADE, related_name='distributions')
-    investor = models.ForeignKey('investors.Investor', on_delete=models.CASCADE, related_name='distributions')
-    distribution_date = models.DateField()
-    amount_distributed = models.DecimalField(max_digits=18, decimal_places=2)
     notes = models.TextField(blank=True, null=True)
 
     class Meta:
-        ordering = ['-distribution_date']
+        abstract = True
 
-    def __str__(self):
-        return f"Distribution of {self.amount_distributed} to {self.investor} on {self.distribution_date}"
+# =========================================================
+#  1. PORTFOLIO TRADES (Investments & Exits)
+# =========================================================
 
-class InvestorUnitIssue(models.Model):
-    fund = models.ForeignKey('funds.Fund', on_delete=models.CASCADE, related_name='unit_issues')
-    investor = models.ForeignKey('investors.Investor', on_delete=models.CASCADE, related_name='unit_issues')
-    issue_date = models.DateField(default=timezone.now)
+class PurchaseTransaction(TransactionBase):
+    investee_company = models.ForeignKey('investee_companies.InvesteeCompany', on_delete=models.CASCADE, related_name='purchases')
+    share_capital = models.ForeignKey('investee_companies.ShareCapital', on_delete=models.SET_NULL, null=True, blank=True)
+    
+    quantity = models.DecimalField(max_digits=18, decimal_places=4)
+    price = models.DecimalField(max_digits=18, decimal_places=4, help_text="Price per share (in Txn Currency)")
+    
+    # Calculated Fields
+    amount = models.DecimalField(max_digits=18, decimal_places=2, default=0, editable=False)
+    amount_fund_currency = models.DecimalField(max_digits=18, decimal_places=2, default=0, editable=False)
+    
+    trade_date = models.DateField(default=timezone.now)
+    settle_date = models.DateField(null=True, blank=True)
+
+    def save(self, *args, **kwargs):
+        self.amount = self.quantity * self.price
+        self.amount_fund_currency = self.amount * self.exchange_rate
+        super().save(*args, **kwargs)
+
+class RedemptionTransaction(TransactionBase):
+    investee_company = models.ForeignKey('investee_companies.InvesteeCompany', on_delete=models.CASCADE, related_name='redemptions')
+    share_capital = models.ForeignKey('investee_companies.ShareCapital', on_delete=models.SET_NULL, null=True, blank=True)
+    
+    quantity = models.DecimalField(max_digits=18, decimal_places=4)
+    price = models.DecimalField(max_digits=18, decimal_places=4, help_text="Selling price per share")
+    
+    amount = models.DecimalField(max_digits=18, decimal_places=2, default=0, editable=False)
+    amount_fund_currency = models.DecimalField(max_digits=18, decimal_places=2, default=0, editable=False)
+    
+    trade_date = models.DateField(default=timezone.now)
+    # Added to fix consistency with PurchaseTransaction
+    settle_date = models.DateField(null=True, blank=True)
+
+    # FIFO / Tax Fields
+    cost_basis = models.DecimalField(max_digits=18, decimal_places=2, null=True, blank=True)
+    realized_gain = models.DecimalField(max_digits=18, decimal_places=2, null=True, blank=True)
+
+    def save(self, *args, **kwargs):
+        self.amount = self.quantity * self.price
+        self.amount_fund_currency = self.amount * self.exchange_rate
+        super().save(*args, **kwargs)
+
+# =========================================================
+#  2. INVESTOR CAPITAL (Liabilities/Equity)
+# =========================================================
+
+class InvestorCommitment(TransactionBase):
+    investor = models.ForeignKey('investors.Investor', on_delete=models.CASCADE, related_name='commitments')
+    amount_committed = models.DecimalField(max_digits=18, decimal_places=2)
+    amount_committed_fund_ccy = models.DecimalField(max_digits=18, decimal_places=2, default=0)
+    commitment_date = models.DateField(default=timezone.now)
+
+    def save(self, *args, **kwargs):
+        self.amount_committed_fund_ccy = self.amount_committed * self.exchange_rate
+        super().save(*args, **kwargs)
+
+class CapitalCall(TransactionBase):
+    investor = models.ForeignKey('investors.Investor', on_delete=models.CASCADE, related_name='capital_calls')
+    amount_called = models.DecimalField(max_digits=18, decimal_places=2)
+    amount_called_fund_ccy = models.DecimalField(max_digits=18, decimal_places=2, default=0)
+    
+    call_date = models.DateField(default=timezone.now)
+    due_date = models.DateField(null=True, blank=True)
+    reference = models.CharField(max_length=100, blank=True)
+
+    def save(self, *args, **kwargs):
+        self.amount_called_fund_ccy = self.amount_called * self.exchange_rate
+        super().save(*args, **kwargs)
+
+class DrawdownReceipt(TransactionBase):
+    investor = models.ForeignKey('investors.Investor', on_delete=models.CASCADE, related_name='drawdown_receipts')
+    # Link to the call being paid
+    capital_call = models.ForeignKey(CapitalCall, on_delete=models.PROTECT, related_name='receipts', null=True, blank=True)
+    
+    amount_received = models.DecimalField(max_digits=18, decimal_places=2)
+    amount_received_fund_ccy = models.DecimalField(max_digits=18, decimal_places=2, default=0)
+    
+    receipt_date = models.DateField(default=timezone.now)
+    reference = models.CharField(max_length=100, blank=True)
+
+    def save(self, *args, **kwargs):
+        self.amount_received_fund_ccy = self.amount_received * self.exchange_rate
+        super().save(*args, **kwargs)
+
+class Distribution(TransactionBase):
+    investor = models.ForeignKey('investors.Investor', on_delete=models.CASCADE, related_name='distributions')
+    
+    gross_amount = models.DecimalField(max_digits=18, decimal_places=2)
+    gross_amount_fund_ccy = models.DecimalField(max_digits=18, decimal_places=2, default=0)
+    
+    tax_withheld = models.DecimalField(max_digits=18, decimal_places=2, default=0)
+    paid_date = models.DateField(default=timezone.now)
+
+    def save(self, *args, **kwargs):
+        self.gross_amount_fund_ccy = self.gross_amount * self.exchange_rate
+        super().save(*args, **kwargs)
+
+    @property
+    def net_amount(self):
+        return self.gross_amount - self.tax_withheld
+
+class InvestorUnitIssue(TransactionBase):
+    investor = models.ForeignKey('investors.Investor', on_delete=models.CASCADE, related_name='units')
     units_issued = models.DecimalField(max_digits=18, decimal_places=4)
-    price_per_unit = models.DecimalField(max_digits=18, decimal_places=6)
-    amount = models.DecimalField(max_digits=18, decimal_places=2, blank=True, null=True)
-
-    class Meta:
-        ordering = ['-issue_date']
-
-    def __str__(self):
-        return f"{self.units_issued} units to {self.investor.name} @ {self.price_per_unit}"
-
-class Cashflow(models.Model):
-    TRANSACTION_TYPES = [
-        ("CALL", "Capital Call (Drawdown)"),
-        ("DISTRIBUTION", "Distribution / Redemption"),
-        ("EXPENSE", "Expense"),
-        ("OTHER", "Other"),
-    ]
-
-    fund = models.ForeignKey(
-        "funds.Fund",
-        on_delete=models.CASCADE,
-        related_name="cashflows"
-    )
-    investor = models.ForeignKey(
-        "investors.Investor",
-        on_delete=models.CASCADE,
-        related_name="cashflows",
-        null=True, blank=True
-    )
-    date = models.DateField(default=timezone.now)
-    transaction_type = models.CharField(max_length=20, choices=TRANSACTION_TYPES)
-    amount = models.DecimalField(max_digits=18, decimal_places=2)
-    description = models.TextField(blank=True, null=True)
-
-    class Meta:
-        ordering = ["-date"]
-
-    def __str__(self):
-        return f"{self.transaction_type} – {self.fund.name} : ₹{self.amount} on {self.date}"
+    nav_at_issue = models.DecimalField(max_digits=18, decimal_places=4)
+    issue_date = models.DateField(default=timezone.now)
+    is_demat = models.BooleanField(default=False)
+    reference = models.CharField(max_length=100, blank=True)
+    

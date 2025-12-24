@@ -1,33 +1,49 @@
 {% extends "base.html" %}
 
-{% block title %}Activity Log{% endblock %}
+{% block title %}Activity Log - {{ fund.name }}{% endblock %}
 
 {% block content %}
-<h1 class="text-2xl font-semibold mb-6">Activity Log</h1>
-<div class="bg-white shadow rounded-lg overflow-hidden border border-slate-200">
-  <table class="min-w-full text-sm">
-    <thead class="bg-slate-100 text-slate-700 uppercase text-xs">
-      <tr>
-        <th class="px-4 py-2 text-left">Timestamp</th>
-        <th class="px-4 py-2 text-left">User</th>
-        <th class="px-4 py-2 text-left">Action</th>
-        <th class="px-4 py-2 text-left">Details</th>
-      </tr>
-    </thead>
-    <tbody>
-      {% for log in logs %}
-      <tr class="border-t hover:bg-slate-50">
-        <td class="px-4 py-2">{{ log.timestamp }}</td>
-        <td class="px-4 py-2">{{ log.user }}</td>
-        <td class="px-4 py-2">{{ log.action }}</td>
-        <td class="px-4 py-2">{{ log.details }}</td>
-      </tr>
-      {% empty %}
-      <tr>
-        <td colspan="4" class="px-4 py-4 text-center text-slate-500">No activities logged yet.</td>
-      </tr>
-      {% endfor %}
-    </tbody>
-  </table>
+<div class="flex items-center gap-4 mb-8">
+    <a href="{% url 'funds:fund_detail' fund.pk %}" class="w-10 h-10 flex items-center justify-center bg-white rounded-xl shadow-sm text-secondary hover:text-primary transition border border-slate-100">
+        <i class="bi bi-arrow-left"></i>
+    </a>
+    <div>
+        <h1 class="text-3xl font-bold text-dark">Audit Trail</h1>
+        <p class="text-secondary text-sm font-medium">{{ fund.name }}</p>
+    </div>
+</div>
+
+<div class="bg-white rounded-3xl shadow-sm border border-slate-100 overflow-hidden">
+    <table class="w-full text-left border-collapse">
+        <thead>
+            <tr class="bg-slate-50/50 border-b border-slate-100 text-secondary text-[10px] font-black uppercase tracking-widest">
+                <th class="px-8 py-5">Timestamp</th>
+                <th class="px-6 py-5">System Action</th>
+                <th class="px-6 py-5">Author</th>
+                <th class="px-8 py-5 text-right">Change Details</th>
+            </tr>
+        </thead>
+        <tbody class="divide-y divide-slate-50">
+            {% for log in logs %}
+            <tr>
+                <td class="px-8 py-5 text-secondary font-mono text-xs">{{ log.timestamp|date:"d M Y H:i" }}</td>
+                <td class="px-6 py-5">
+                    <span class="px-2 py-1 bg-indigo-50 text-primary rounded text-[10px] font-black uppercase tracking-tighter">
+                        {{ log.action }}
+                    </span>
+                </td>
+                <td class="px-6 py-5 text-sm font-bold text-dark">{{ log.user.username }}</td>
+                <td class="px-8 py-5 text-right text-xs text-slate-500 italic">{{ log.details }}</td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="4" class="px-8 py-20 text-center">
+                    <i class="bi bi-clock text-5xl text-slate-50 block mb-4"></i>
+                    <p class="text-secondary text-sm italic">No system activities recorded for this scheme.</p>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
 </div>
 {% endblock %}

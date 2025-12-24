@@ -1,10 +1,123 @@
 {% extends 'base.html' %}
-{% block title %}Add New Investee Company{% endblock %}
+{% block title %}Onboard Company{% endblock %}
+
 {% block content %}
-<h1 class="text-2xl font-semibold mb-6">Add New Investee Company</h1>
-<form method="post" class="bg-white shadow rounded-lg p-4 space-y-4">
-  {% csrf_token %}
-  {{ form.as_p }}
-  <button type="submit" class="px-3 py-2 bg-indigo-600 text-white rounded-lg text-sm">Save Company</button>
-</form>
+<div class="max-w-5xl mx-auto">
+    <div class="mb-8">
+        <a href="{% url 'investee_companies:portal-list' %}" class="text-sm font-bold text-secondary hover:text-primary transition flex items-center">
+            <i class="bi bi-arrow-left mr-2"></i> Back to Portfolio
+        </a>
+        <h1 class="text-3xl font-bold text-dark mt-4">Onboard New Investee</h1>
+    </div>
+
+    <form method="post" class="space-y-8" id="onboardForm">
+        {% csrf_token %}
+        
+        <!-- 1. Basic Info -->
+        <div class="bg-white rounded-3xl shadow-sm border border-slate-100 p-8 space-y-6">
+            <h2 class="text-lg font-bold text-dark flex items-center">
+                <span class="w-8 h-8 bg-indigo-50 text-primary rounded-lg flex items-center justify-center mr-3 text-sm">1</span>
+                Company Profile
+            </h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div class="md:col-span-2">
+                    <label class="block text-xs font-bold text-secondary uppercase tracking-widest mb-2">Legal Entity Name</label>
+                    {{ form.name }}
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-secondary uppercase tracking-widest mb-2">CIN</label>
+                    {{ form.cin }}
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-secondary uppercase tracking-widest mb-2">Sector</label>
+                    {{ form.sector }}
+                </div>
+            </div>
+        </div>
+
+        <!-- 2. Opening Capital -->
+        <div class="bg-white rounded-3xl shadow-sm border border-slate-100 p-8 space-y-6">
+            <div class="flex justify-between items-center">
+                <h2 class="text-lg font-bold text-dark flex items-center">
+                    <span class="w-8 h-8 bg-indigo-50 text-primary rounded-lg flex items-center justify-center mr-3 text-sm">2</span>
+                    Opening Capital Structure
+                </h2>
+                <button type="button" id="add-row-btn" class="text-xs font-bold text-primary bg-indigo-50 px-3 py-2 rounded-lg hover:bg-indigo-100 transition">
+                    <i class="bi bi-plus-lg mr-1"></i> Add Instrument
+                </button>
+            </div>
+
+            {{ capital_formset.management_form }}
+            <div id="capital-formset-container" class="space-y-4">
+                {% for c_form in capital_formset %}
+                <div class="capital-row p-5 bg-slate-50 rounded-2xl border border-slate-200 relative">
+                    <div class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4">
+                        <div>
+                            <label class="block text-[10px] font-bold text-secondary uppercase tracking-widest mb-1">Instrument Type</label>
+                            {{ c_form.share_type }}
+                        </div>
+                        <div>
+                            <label class="block text-[10px] font-bold text-secondary uppercase tracking-widest mb-1">Class Name</label>
+                            {{ c_form.class_name }}
+                        </div>
+                        <div>
+                            <label class="block text-[10px] font-bold text-secondary uppercase tracking-widest mb-1">Face Value (₹)</label>
+                            {{ c_form.face_value }}
+                        </div>
+                        <div>
+                            <label class="block text-[10px] font-bold text-secondary uppercase tracking-widest mb-1">Issued Units</label>
+                            {{ c_form.issued_shares }}
+                        </div>
+                        <div>
+                            <label class="block text-[10px] font-bold text-secondary uppercase tracking-widest mb-1">As On Date</label>
+                            {{ c_form.as_on_date }}
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <div class="flex justify-end pt-4">
+            <button type="submit" class="bg-primary text-white px-10 py-4 rounded-2xl font-bold shadow-xl shadow-primary/20 hover:bg-indigo-700 transition flex items-center">
+                Save & Continue <i class="bi bi-arrow-right ml-2"></i>
+            </button>
+        </div>
+    </form>
+</div>
+
+<!-- JS Template for dynamic rows -->
+<div id="empty-form-template" class="hidden">
+    <div class="capital-row p-5 bg-slate-50 rounded-2xl border border-slate-200 relative mt-4">
+        <div class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4">
+            <div>{{ capital_formset.empty_form.share_type }}</div>
+            <div>{{ capital_formset.empty_form.class_name }}</div>
+            <div>{{ capital_formset.empty_form.face_value }}</div>
+            <div>{{ capital_formset.empty_form.issued_shares }}</div>
+            <div>{{ capital_formset.empty_form.as_on_date }}</div>
+        </div>
+        <button type="button" class="remove-row-btn absolute -top-2 -right-2 bg-white text-rose-500 rounded-full p-1 shadow-sm border border-slate-200">
+            <i class="bi bi-x-lg text-xs"></i>
+        </button>
+    </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const addBtn = document.getElementById('add-row-btn');
+        const container = document.getElementById('capital-formset-container');
+        const totalForms = document.querySelector('[name="capital-TOTAL_FORMS"]');
+        const template = document.getElementById('empty-form-template').innerHTML;
+
+        addBtn.addEventListener('click', () => {
+            const count = parseInt(totalForms.value);
+            container.insertAdjacentHTML('beforeend', template.replace(/__prefix__/g, count));
+            totalForms.value = count + 1;
+        });
+
+        container.addEventListener('click', (e) => {
+            if (e.target.closest('.remove-row-btn')) e.target.closest('.capital-row').remove();
+        });
+    });
+</script>
 {% endblock %}

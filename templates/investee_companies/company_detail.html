@@ -1,77 +1,195 @@
 {% extends 'base.html' %}
-{% block title %}{{ company.name }} — Company Dashboard{% endblock %}
+{% block title %}{{ company.name }} • Dashboard{% endblock %}
+
 {% block content %}
-<div class="flex items-center justify-between mb-6">
-  <h1 class="text-2xl font-bold">{{ company.name }}</h1>
-  <div class="text-sm text-secondary">
-    CIN: <span class="font-mono">{{ company.cin }}</span> • Incorporated: {{ company.incorporation_date }}
-  </div>
-</div>
-
-<div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-  <!-- Left: Shareholding + Corporate Actions -->
-  <div class="lg:col-span-2 space-y-6">
-    <!-- Shareholding snapshot -->
-    <div class="bg-white rounded-xl shadow border border-slate-200">
-      <div class="p-4 border-b">
-        <h2 class="text-lg font-semibold">Equity Shareholding Snapshot</h2>
-        <p class="text-sm text-slate-500">Top holders and their % of Equity class.</p>
-      </div>
-      <div class="p-4">
-        {% if shareholding_snapshot %}
-        <div class="overflow-x-auto">
-          <table class="min-w-full text-sm">
-            <thead class="text-left text-slate-500">
-              <tr>
-                <th class="py-2 pr-4">Holder</th>
-                <th class="py-2 pr-4 text-right">Shares</th>
-                <th class="py-2 pr-4 text-right">% of Equity</th>
-              </tr>
-            </thead>
-            <tbody>
-              {% for r in shareholding_snapshot %}
-              <tr class="border-t">
-                <td class="py-2 pr-4">{{ r.holder }}</td>
-                <td class="py-2 pr-4 text-right">{{ r.shares|floatformat:0 }}</td>
-                <td class="py-2 pr-4 text-right">{{ r.percent|floatformat:2 }}%</td>
-              </tr>
-              {% endfor %}
-            </tbody>
-            <tfoot class="border-t">
-              <tr>
-                <td class="py-2 pr-4 font-medium">Total equity shares</td>
-                <td class="py-2 pr-4 text-right font-medium">{{ total_eq_shares|floatformat:0 }}</td>
-                <td></td>
-              </tr>
-            </tfoot>
-          </table>
+<div class="space-y-8">
+    <!-- Header -->
+    <div class="flex flex-col md:flex-row md:items-center justify-between gap-6">
+        <div class="flex items-center gap-5">
+            <div class="w-16 h-16 bg-white rounded-2xl shadow-sm border border-slate-100 flex items-center justify-center text-primary text-3xl">
+                <i class="bi bi-building"></i>
+            </div>
+            <div>
+                <h1 class="text-3xl font-bold text-dark tracking-tight">{{ company.name }}</h1>
+                <p class="text-secondary font-medium">{{ company.sector|default:"Sector Unknown" }} • CIN: {{ company.cin|default:"N/A" }}</p>
+            </div>
         </div>
-        {% else %}
-        <div class="text-slate-500 text-sm">No equity shareholding captured yet.</div>
-        {% endif %}
-      </div>
+        
+        <div class="flex gap-3">
+             <a href="{% url 'investee_companies:add-corporate-action' company.pk %}" class="px-4 py-2 bg-white text-secondary font-bold rounded-xl shadow-sm border border-slate-200 hover:text-primary transition text-sm flex items-center">
+                <i class="bi bi-lightning-charge mr-2"></i> Corporate Action
+            </a>
+            <a href="{% url 'investee_companies:add-valuation' company.pk %}" class="px-4 py-2 bg-white text-secondary font-bold rounded-xl shadow-sm border border-slate-200 hover:text-primary transition text-sm flex items-center">
+                <i class="bi bi-graph-up mr-2"></i> Add Valuation
+            </a>
+            <a href="{% url 'investee_companies:cap-table' company.pk %}" class="px-4 py-2 bg-primary text-white font-bold rounded-xl shadow-lg shadow-primary/20 hover:bg-indigo-700 transition text-sm flex items-center">
+                <i class="bi bi-table mr-2"></i> Cap Table
+            </a>
+        </div>
     </div>
-  </div>
 
-  <!-- Right: At-a-glance -->
-  <div class="space-y-6">
-    <div class="bg-white rounded-xl shadow border border-slate-200 p-4">
-      <h3 class="text-base font-semibold mb-2">Company</h3>
-      <div class="text-sm">
-        <div class="flex justify-between py-1"><span>Name</span><span class="font-medium">{{ company.name }}</span></div>
-        <div class="flex justify-between py-1"><span>CIN</span><span class="font-mono">{{ company.cin }}</span></div>
-        <div class="flex justify-between py-1"><span>Incorporation</span><span>{{ company.incorporation_date }}</span></div>
-      </div>
+    <!-- 1. Capital Structure & Holdings Summary -->
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <!-- Capital Structure -->
+        <div class="lg:col-span-2 bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
+            <div class="px-6 py-4 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
+                <h2 class="font-bold text-dark flex items-center">
+                    <i class="bi bi-layers text-indigo-500 mr-2"></i> Capital Structure
+                </h2>
+                <a href="{% url 'investee_companies:manage-capital' company.pk %}" class="text-xs font-bold text-indigo-600 bg-indigo-50 px-3 py-1.5 rounded-lg hover:bg-indigo-100 transition">
+                    <i class="bi bi-pencil-square mr-1"></i> Manage Structure
+                </a>
+            </div>
+            <div class="overflow-x-auto">
+                <table class="w-full text-sm text-left">
+                    <thead class="text-xs text-secondary uppercase bg-slate-50 border-b border-slate-100">
+                        <tr>
+                            <th class="px-6 py-3">Instrument</th>
+                            <th class="px-6 py-3">Class Name</th>
+                            <th class="px-6 py-3 text-right">Face Value</th>
+                            <th class="px-6 py-3 text-right">Total Units</th>
+                            <th class="px-6 py-3 text-right">Paid-up Capital</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-slate-50">
+                        {% for item in structure %}
+                        <tr class="hover:bg-slate-50/50">
+                            <td class="px-6 py-3 font-medium text-dark">{{ item.instrument }}</td>
+                            <td class="px-6 py-3 text-secondary">{{ item.class_name }}</td>
+                            <td class="px-6 py-3 text-right text-secondary">₹{{ item.face_value|floatformat:2 }}</td>
+                            <td class="px-6 py-3 text-right font-medium text-dark">{{ item.total_units|floatformat:0 }}</td>
+                            <td class="px-6 py-3 text-right font-bold text-indigo-600">₹{{ item.total_capital|floatformat:2 }}</td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="5" class="px-6 py-8 text-center text-secondary italic">
+                                No capital structure defined yet. 
+                                <a href="{% url 'investee_companies:manage-capital' company.pk %}" class="text-primary underline">Add share classes</a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- AIF Fund Holdings (Internal View) -->
+        <div class="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden flex flex-col">
+            <div class="px-6 py-4 border-b border-slate-100 bg-slate-50/50">
+                <h2 class="font-bold text-dark flex items-center">
+                    <i class="bi bi-safe text-emerald-500 mr-2"></i> Fund Holdings
+                </h2>
+            </div>
+            <div class="flex-1 overflow-y-auto max-h-[300px] p-0">
+                {% if fund_holdings %}
+                <table class="w-full text-sm text-left">
+                     <thead class="text-xs text-secondary uppercase bg-slate-50 sticky top-0">
+                        <tr>
+                            <th class="px-6 py-2">Investor</th>
+                            <th class="px-6 py-2">Class</th>
+                            <th class="px-6 py-2 text-right">Units</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-slate-50">
+                        {% for h in fund_holdings %}
+                        <tr class="hover:bg-slate-50">
+                            <td class="px-6 py-3 font-medium text-dark">{{ h.investor__name }}</td>
+                            <td class="px-6 py-3 text-xs text-secondary">{{ h.share_capital__class_name }}</td>
+                            <td class="px-6 py-3 text-right font-mono text-slate-600">{{ h.units|floatformat:0 }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+                {% else %}
+                <div class="p-6 text-center text-secondary text-sm">
+                    No internal funds hold shares yet.
+                    <br>
+                    <a href="{% url 'investee_companies:cap-table' company.pk %}" class="text-primary underline mt-2 inline-block">Update Cap Table</a>
+                </div>
+                {% endif %}
+            </div>
+            <div class="p-4 bg-slate-50 border-t border-slate-100 text-right">
+                <span class="text-xs text-secondary uppercase font-bold mr-2">Total Cost Basis</span>
+                <span class="text-lg font-bold text-dark">₹{{ stats.cost }} {{ suffix }}</span>
+            </div>
+        </div>
     </div>
-    <div class="bg-white rounded-xl shadow border border-slate-200 p-4">
-      <h3 class="text-base font-semibold mb-2">Quick Links</h3>
-      <div class="flex flex-col gap-2 text-sm">
-        <a class="text-indigo-700 hover:underline" href="{% url 'investee_companies:company_shareholding_pattern' company.pk %}">Shareholding Pattern</a>
-        <a class="text-indigo-700 hover:underline" href="{% url 'investee_companies:company_cap_table' company.pk %}">Cap Table</a>
-        <a class="text-indigo-700 hover:underline" href="{% url 'investee_companies:add_shareholding' company.pk %}">Add Shareholding</a>
-        <a class="text-indigo-700 hover:underline" href="{% url 'investee_companies:add_share_valuation' company.pk %}">Add Share Valuation</a>
-      </div>
+
+    <!-- 2. Charts & Financials -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        <!-- Valuation Chart -->
+        <div class="bg-white rounded-2xl shadow-sm border border-slate-100 p-6">
+            <h3 class="font-bold text-dark mb-4">Valuation History</h3>
+            <div class="h-64 relative">
+                <canvas id="valuationChart"></canvas>
+            </div>
+        </div>
+
+        <!-- Recent Financials -->
+        <div class="bg-white rounded-2xl shadow-sm border border-slate-100 p-6">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="font-bold text-dark">Recent Financials</h3>
+                <span class="text-xs bg-slate-100 text-slate-600 px-2 py-1 rounded">Audited</span>
+            </div>
+            <div class="space-y-4">
+                {% for fin in financials|slice:":3" %}
+                <div class="flex items-center justify-between p-3 rounded-xl border border-slate-100 hover:border-indigo-100 transition">
+                    <div>
+                        <div class="text-sm font-bold text-dark">{{ fin.financial_year }}</div>
+                        <div class="text-xs text-secondary">Revenue</div>
+                    </div>
+                    <div class="text-right">
+                        <div class="text-sm font-bold text-dark">₹{{ fin.revenue }}</div>
+                        <div class="text-xs {% if fin.net_profit >= 0 %}text-emerald-600{% else %}text-rose-600{% endif %}">
+                            NP: ₹{{ fin.net_profit }}
+                        </div>
+                    </div>
+                </div>
+                {% empty %}
+                <div class="text-center py-8 text-secondary text-sm italic">No financial data uploaded.</div>
+                {% endfor %}
+            </div>
+        </div>
     </div>
-  </div>
 </div>
+
+<!-- Chart JS -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    const ctx = document.getElementById('valuationChart');
+    if (ctx) {
+        const chartData = JSON.parse('{{ chart_data_json|escapejs }}');
+        
+        // Group data by class if multiple classes exist
+        // For simplicity, this linear plot assumes simple timeline. 
+        // A production version would need proper dataset grouping.
+        
+        new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: chartData.labels,
+                datasets: [{
+                    label: 'Per Share Value (₹)',
+                    data: chartData.values,
+                    borderColor: '#4f46e5',
+                    backgroundColor: 'rgba(79, 70, 229, 0.1)',
+                    borderWidth: 2,
+                    tension: 0.3,
+                    fill: true
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false }
+                },
+                scales: {
+                    y: { beginAtZero: false, grid: { color: '#f1f5f9' } },
+                    x: { grid: { display: false } }
+                }
+            }
+        });
+    }
+</script>
 {% endblock %}

@@ -1,0 +1,127 @@
+{% extends "base.html" %}
+
+{% block title %}Log Receipt • {{ fund.name }}{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto">
+    <!-- Breadcrumb & Header -->
+    <nav class="flex mb-5 text-secondary text-[10px] font-black uppercase tracking-widest" aria-label="Breadcrumb">
+        <ol class="flex items-center space-x-2">
+            <li><a href="{% url 'funds:portal-funds' %}" class="hover:text-primary">Funds</a></li>
+            <li><i class="bi bi-chevron-right text-[8px]"></i></li>
+            <li><a href="{% url 'funds:fund_detail' fund.pk %}" class="hover:text-primary">{{ fund.name }}</a></li>
+            <li><i class="bi bi-chevron-right text-[8px]"></i></li>
+            <li class="text-dark">Log Receipt</li>
+        </ol>
+    </nav>
+
+    <div class="mb-8">
+        <h1 class="text-3xl font-bold text-dark tracking-tight">Log Drawdown Receipt</h1>
+        <p class="text-secondary mt-1 font-medium italic">Record incoming capital linked to a specific call request.</p>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <!-- Main Form -->
+        <div class="lg:col-span-2">
+            <div class="bg-white rounded-3xl shadow-sm border border-slate-100 p-8">
+                <form method="POST" class="space-y-6">
+                    {% csrf_token %}
+                    
+                    {% if form.non_field_errors %}
+                    <div class="p-4 bg-rose-50 border border-rose-100 rounded-2xl text-rose-600 text-sm font-bold">
+                        {% for error in form.non_field_errors %}{{ error }}{% endfor %}
+                    </div>
+                    {% endif %}
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <!-- Investor Selection -->
+                        <div class="space-y-2">
+                            <label class="text-[10px] font-black text-secondary uppercase tracking-widest ml-1">Select Investor</label>
+                            {{ form.investor }}
+                            {% if form.investor.errors %}<p class="text-rose-500 text-[10px] font-bold">{{ form.investor.errors.0 }}</p>{% endif %}
+                        </div>
+
+                        <!-- Call Reference Selection -->
+                        <div class="space-y-2">
+                            <label class="text-[10px] font-black text-secondary uppercase tracking-widest ml-1">Call Request Reference</label>
+                            {{ form.capital_call }}
+                            {% if form.capital_call.errors %}<p class="text-rose-500 text-[10px] font-bold">{{ form.capital_call.errors.0 }}</p>{% endif %}
+                            <p class="text-[9px] text-slate-400 italic px-1">Only calls for the selected investor will be validated.</p>
+                        </div>
+
+                        <!-- Amount Received -->
+                        <div class="space-y-2">
+                            <label class="text-[10px] font-black text-secondary uppercase tracking-widest ml-1">Amount Received (₹)</label>
+                            {{ form.amount_received }}
+                            {% if form.amount_received.errors %}<p class="text-rose-500 text-[10px] font-bold">{{ form.amount_received.errors.0 }}</p>{% endif %}
+                        </div>
+
+                        <!-- Receipt Date -->
+                        <div class="space-y-2">
+                            <label class="text-[10px] font-black text-secondary uppercase tracking-widest ml-1">Date of Credit</label>
+                            {{ form.receipt_date }}
+                            {% if form.receipt_date.errors %}<p class="text-rose-500 text-[10px] font-bold">{{ form.receipt_date.errors.0 }}</p>{% endif %}
+                        </div>
+
+                        <!-- Bank Reference -->
+                        <div class="md:col-span-2 space-y-2">
+                            <label class="text-[10px] font-black text-secondary uppercase tracking-widest ml-1">UTR / Bank Reference Number</label>
+                            {{ form.reference }}
+                            {% if form.reference.errors %}<p class="text-rose-500 text-[10px] font-bold">{{ form.reference.errors.0 }}</p>{% endif %}
+                        </div>
+                    </div>
+
+                    <div class="pt-4 flex items-center gap-4">
+                        <button type="submit" class="flex-1 bg-primary text-white font-bold py-4 rounded-2xl shadow-lg shadow-primary/20 hover:bg-indigo-700 transition transform active:scale-[0.98]">
+                            <i class="bi bi-check2-circle mr-2"></i> Confirm & Post Receipt
+                        </button>
+                        <a href="{% url 'funds:fund_detail' fund.pk %}" class="px-8 py-4 bg-slate-50 text-secondary font-bold rounded-2xl hover:bg-slate-100 transition">
+                            Cancel
+                        </a>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Guidance Sidebar -->
+        <div class="space-y-6">
+            <div class="bg-indigo-900 rounded-3xl p-8 text-white relative overflow-hidden shadow-xl shadow-indigo-100">
+                <div class="relative z-10">
+                    <h3 class="font-bold text-lg mb-4 flex items-center">
+                        <i class="bi bi-shield-check mr-2 text-indigo-300"></i> Ledger Rules
+                    </h3>
+                    <ul class="space-y-4 text-xs font-medium text-indigo-100">
+                        <li class="flex items-start">
+                            <i class="bi bi-dot mr-1"></i> 
+                            <span>Every receipt <strong>must</strong> link to a valid Capital Call reference.</span>
+                        </li>
+                        <li class="flex items-start">
+                            <i class="bi bi-dot mr-1"></i> 
+                            <span>Partial receipts are allowed. Multiple receipts can settle one call.</span>
+                        </li>
+                        <li class="flex items-start">
+                            <i class="bi bi-dot mr-1"></i> 
+                            <span>The system prevents receipts from exceeding the total amount called.</span>
+                        </li>
+                    </ul>
+                </div>
+                <i class="bi bi-bank absolute -right-6 -bottom-6 text-9xl text-white/5"></i>
+            </div>
+
+            <div class="bg-white rounded-3xl p-8 border border-slate-100 shadow-sm">
+                <h3 class="text-[10px] font-black text-secondary uppercase tracking-widest mb-4">Pending Calls</h3>
+                <div class="space-y-3">
+                    {% for call in fund.capitalcall_set.all|dictsortreversed:"call_date"|slice:":3" %}
+                    <div class="p-3 bg-slate-50 rounded-xl border border-slate-100">
+                        <p class="text-[10px] font-bold text-dark truncate">{{ call.investor.name }}</p>
+                        <p class="text-[10px] text-secondary">Called: ₹{{ call.amount_called|floatformat:2 }}</p>
+                    </div>
+                    {% empty %}
+                    <p class="text-[10px] text-slate-400 italic">No calls raised for this fund yet.</p>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
