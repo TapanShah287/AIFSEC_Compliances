@@ -1,6 +1,16 @@
+# Web Server & Production
+gunicorn
+whitenoise
+dj-database-url
+psycopg2-binary
+
+# Django Core
 Django>=4.2
+
+# Third-Party Apps from your settings.py
 djangorestframework
 django-filter
-docxtpl
-PyYAML
-whitenoise
+django-taggit
+
+# Optional but recommended for security/env management
+python-dotenv
