@@ -3,12 +3,11 @@ from .models import DocumentTemplate, GeneratedDocument
 
 @admin.register(DocumentTemplate)
 class DocumentTemplateAdmin(admin.ModelAdmin):
-    list_display = ('name', 'code', 'created_at')
+    list_display = ('name', 'code', 'type', 'created_at')
+    list_filter = ('type',)
     search_fields = ('name', 'code')
-    help_text = "Upload .docx files with jinja2 tags like {{ investor.name }}"
 
 @admin.register(GeneratedDocument)
 class GeneratedDocumentAdmin(admin.ModelAdmin):
-    list_display = ('id', 'template', 'created_at', 'investor', 'fund')
-    list_filter = ('template', 'created_at')
+    list_display = ('template', 'fund', 'investor', 'created_at')
     readonly_fields = ('created_at', 'generated_file')

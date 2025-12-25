@@ -30,10 +30,10 @@ def dashboard_view(request):
     # 2. Global Financial Aggregations (Raw Data)
     total_drawdowns = DrawdownReceipt.objects.aggregate(s=Sum('amount_received'))['s'] or 0
     total_investments = PurchaseTransaction.objects.aggregate(
-        total=Sum(ExpressionWrapper(F('quantity') * F('price'), output_field=DecimalField()))
+        total=Sum(ExpressionWrapper(F('quantity') * F('price_per_share'), output_field=DecimalField()))
     )['total'] or 0
     total_redemptions = RedemptionTransaction.objects.aggregate(
-        total=Sum(ExpressionWrapper(F('quantity') * F('price'), output_field=DecimalField()))
+        total=Sum(ExpressionWrapper(F('quantity') * F('price_per_share'), output_field=DecimalField()))
     )['total'] or 0
     total_distributions = Distribution.objects.aggregate(s=Sum('gross_amount'))['s'] or 0
 

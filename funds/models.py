@@ -3,6 +3,8 @@ from django.utils import timezone
 from django.conf import settings
 from decimal import Decimal
 from django.core.validators import MinValueValidator
+from manager_entities.models import ManagerEntity
+
 
 class Fund(models.Model):
     # --- Choices ---
@@ -56,11 +58,21 @@ class Fund(models.Model):
 
     # --- Relationships ---
     manager = models.ForeignKey(
-        settings.AUTH_USER_MODEL, 
-        on_delete=models.SET_NULL, 
-        null=True, 
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
         related_name='managed_funds'
     )
+
+    manager_entity = models.ForeignKey(
+        ManagerEntity,
+        on_delete=models.PROTECT,
+        related_name="funds",
+        help_text="Manager entity under which this fund is registered",
+        null=False,
+        blank=False,
+    )
+    
     # Self-referential for CIVs (Co-Investment Vehicles link to Main Fund)
     parent_fund = models.ForeignKey(
         'self', 

@@ -1,83 +1,97 @@
 {% extends 'base.html' %}
-{% block title %}Cap Table • {{ company.name }}{% endblock %}
+{% load humanize %}
+
+{% block title %}Cap Table: {{ company.name }}{% endblock %}
 
 {% block content %}
-<div class="space-y-8">
-    <div class="flex items-center justify-between">
-        <div class="flex items-center gap-4">
-            <a href="{% url 'investee_companies:portal-detail' company.pk %}" class="w-10 h-10 flex items-center justify-center bg-white rounded-xl shadow-sm text-secondary hover:text-primary border border-slate-100 transition">
-                <i class="bi bi-arrow-left"></i>
-            </a>
-            <h1 class="text-2xl font-bold text-dark tracking-tight">Capitalization Table</h1>
-        </div>
-        <a href="{% url 'investee_companies:add-shareholding' company.pk %}" class="bg-primary text-white px-5 py-2.5 rounded-xl font-bold shadow-lg shadow-primary/20 hover:bg-indigo-700 transition text-xs">
-            <i class="bi bi-plus-lg mr-1"></i> Register Shareholder
+<div class="flex items-center justify-between mb-8">
+    <div class="flex items-center gap-4">
+        <a href="{% url 'investee_companies:portal-detail' company.pk %}" class="p-2 hover:bg-slate-100 rounded-full transition-colors">
+            <i data-lucide="arrow-left" class="w-5 h-5 text-slate-500"></i>
         </a>
+        <div>
+            <h1 class="text-2xl font-bold text-slate-900">Capitalization Table</h1>
+            <p class="text-slate-500 text-sm">{{ company.name }} • As on {% now "d M Y" %}</p>
+        </div>
     </div>
+    <div class="flex gap-3">
+        <a href="{% url 'investee_companies:add-shareholding' company.pk %}" class="px-4 py-2 bg-indigo-600 text-white rounded-xl text-sm font-bold shadow-lg shadow-indigo-200 hover:bg-indigo-700 transition-all flex items-center gap-2">
+            <i data-lucide="user-plus" class="w-4 h-4"></i> Add Shareholder
+        </a>
+        <button class="px-4 py-2 bg-white border border-slate-200 text-slate-700 rounded-xl text-sm font-medium hover:bg-slate-50 transition-all flex items-center gap-2">
+            <i data-lucide="download" class="w-4 h-4"></i> Export Excel
+        </button>
+    </div>
+</div>
 
-    <div class="space-y-10">
-        {% for sc_id, class_data in grouped.items %}
-        <div class="bg-white rounded-3xl shadow-sm border border-slate-100 overflow-hidden">
-            <div class="px-8 py-4 border-b border-slate-100 bg-slate-50/50 flex justify-between items-center">
-                <h2 class="font-bold text-indigo-700 text-sm uppercase tracking-widest">{{ class_data.label }}</h2>
-                <div class="text-xs text-secondary">
-                    Total Pool: <span class="font-black text-dark">{{ class_data.total_units|floatformat:0 }} Units</span>
+<div class="space-y-8">
+    
+    {% for class_group in cap_table_data %}
+    <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+        <div class="bg-slate-50 px-6 py-4 border-b border-slate-200 flex justify-between items-center">
+            <div class="flex items-center gap-3">
+                <div class="w-8 h-8 rounded-lg bg-indigo-100 flex items-center justify-center text-indigo-700">
+                    <i data-lucide="pie-chart" class="w-4 h-4"></i>
+                </div>
+                <div>
+                    <h3 class="font-bold text-slate-800">{{ class_group.share_class.class_name }}</h3>
+                    <p class="text-[10px] text-slate-500 font-bold uppercase tracking-wide">{{ class_group.share_class.get_share_type_display }}</p>
                 </div>
             </div>
-            
-            <table class="w-full text-left text-sm">
-                <thead class="bg-slate-50/30 text-secondary text-[10px] font-black uppercase tracking-widest border-b border-slate-100">
-                    <tr>
-                        <th class="px-8 py-4">Shareholder Name</th>
-                        <th class="px-8 py-4 text-right">Units Held</th>
-                        <th class="px-8 py-4 text-right">Face Value</th>
-                        <th class="px-8 py-4 text-right">% of Class</th>
-                        <th class="px-8 py-4 text-right">% of Company</th>
-                    </tr>
-                </thead>
-                <tbody class="divide-y divide-slate-50">
-                    {% for row in class_data.rows %}
-                    <tr class="{% if row.is_residual %}bg-indigo-50/30 italic{% else %}hover:bg-slate-50/50{% endif %}">
-                        <td class="px-8 py-4">
-                            <div class="flex items-center">
-                                {% if row.is_residual %}
-                                <i class="bi bi-people-fill text-indigo-400 mr-2"></i>
-                                {% else %}
-                                <i class="bi bi-person-circle text-slate-300 mr-2"></i>
-                                {% endif %}
-                                <span class="font-bold {% if row.is_residual %}text-indigo-600{% else %}text-dark{% endif %}">{{ row.holder }}</span>
-                            </div>
-                        </td>
-                        <td class="px-8 py-4 text-right font-mono">{{ row.number_of_shares|floatformat:0 }}</td>
-                        <td class="px-8 py-4 text-right text-secondary font-mono">₹{{ row.total_face_value|floatformat:2 }}</td>
-                        <td class="px-8 py-4 text-right font-black text-dark">{{ row.percent_of_class|floatformat:2 }}%</td>
-                        <td class="px-8 py-4 text-right text-secondary">{{ row.percent_of_total|floatformat:2 }}%</td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-                <tfoot class="bg-slate-50 font-bold text-dark border-t border-slate-100">
-                    <tr>
-                        <td class="px-8 py-4 uppercase text-[10px] tracking-widest">Total Class Pool</td>
-                        <td class="px-8 py-4 text-right">{{ class_data.total_units|floatformat:0 }}</td>
-                        <td class="px-8 py-4 text-right">₹{{ class_data.total_face_value|floatformat:2 }}</td>
-                        <td class="px-8 py-4 text-right">100.00%</td>
-                        <td class="px-8 py-4 text-right">---</td>
-                    </tr>
-                </tfoot>
-            </table>
+            <div class="text-right">
+                <p class="text-xs text-slate-500">Total Shares</p>
+                <p class="font-mono font-bold text-slate-900">{{ class_group.total_shares|intcomma }}</p>
+            </div>
         </div>
-        {% endfor %}
-    </div>
 
-    <div class="bg-indigo-600 rounded-3xl p-8 text-white shadow-xl shadow-indigo-100 flex flex-col md:flex-row items-center justify-between gap-6">
-        <div>
-            <h3 class="text-xl font-bold">Consolidated Portfolio Total</h3>
-            <p class="text-indigo-100 text-sm mt-1">Sum of all master instrument pools for this entity.</p>
-        </div>
-        <div class="text-right">
-            <div class="text-[10px] font-black uppercase tracking-widest opacity-60">Total Outstanding Units</div>
-            <div class="text-4xl font-black">{{ grand_total_pool|floatformat:0 }}</div>
-        </div>
+        <table class="w-full text-left">
+            <thead class="bg-white border-b border-slate-100 text-[10px] uppercase text-slate-400 font-bold">
+                <tr>
+                    <th class="px-6 py-2">Shareholder Name</th>
+                    <th class="px-6 py-2 text-right">No. of Shares</th>
+                    <th class="px-6 py-2 text-right">Face Value</th>
+                    <th class="px-6 py-2 text-right">Ownership % (Class)</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-50">
+                {% for holding in class_group.holdings %}
+                <tr class="hover:bg-slate-50 transition-colors">
+                    <td class="px-6 py-3">
+                        <div class="flex items-center gap-3">
+                            <div class="w-6 h-6 rounded-full bg-slate-100 flex items-center justify-center text-[10px] font-bold text-slate-500">
+                                {{ holding.display_holder|slice:":1" }}
+                            </div>
+                            <span class="text-sm font-medium text-slate-700">{{ holding.display_holder }}</span>
+                            {% if holding.investor %}
+                            <span class="px-1.5 py-0.5 bg-indigo-50 text-indigo-600 text-[9px] font-bold uppercase rounded border border-indigo-100">Fund Investor</span>
+                            {% endif %}
+                        </div>
+                    </td>
+                    <td class="px-6 py-3 text-right text-sm font-mono text-slate-600">{{ holding.number_of_shares|intcomma }}</td>
+                    <td class="px-6 py-3 text-right text-sm text-slate-500">₹ {{ holding.share_capital.face_value }}</td>
+                    <td class="px-6 py-3 text-right">
+                        <div class="flex items-center justify-end gap-2">
+                            <span class="text-xs font-bold text-slate-700">{{ holding.percent_of_class }}%</span>
+                            <div class="w-12 h-1 bg-slate-100 rounded-full overflow-hidden">
+                                <div class="bg-indigo-500 h-full" style="width: {{ holding.percent_of_class }}%"></div>
+                            </div>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
     </div>
+    {% empty %}
+    <div class="text-center py-12 bg-white rounded-2xl border border-dashed border-slate-200">
+        <div class="w-12 h-12 bg-slate-50 rounded-full flex items-center justify-center mx-auto mb-3">
+            <i data-lucide="users" class="w-6 h-6 text-slate-300"></i>
+        </div>
+        <h3 class="text-slate-900 font-medium">Cap Table Empty</h3>
+        <p class="text-slate-500 text-sm mt-1">Start by adding share classes (e.g. Equity, Seed) in Capital Structure.</p>
+        <a href="{% url 'investee_companies:manage-capital' company.pk %}" class="text-indigo-600 font-bold text-sm mt-4 inline-block hover:underline">Setup Structure</a>
+    </div>
+    {% endfor %}
+
 </div>
 {% endblock %}

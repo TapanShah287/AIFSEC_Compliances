@@ -4,39 +4,37 @@ from .models import ComplianceTask, ComplianceDocument
 # Common styling
 STYLE = {'class': 'w-full p-2 border border-gray-300 rounded'}
 
-class ComplianceTaskCreateForm(forms.ModelForm):
-    """Form used for creating a new task."""
+class ComplianceTaskForm(forms.ModelForm):
     class Meta:
         model = ComplianceTask
-        fields = ["fund", "topic", "description", "due_date", "assigned_to", "notes"]
+        # FIXED: Changed 'topic' -> 'title' and 'notes' -> 'description'
+        fields = ['title', 'jurisdiction', 'due_date', 'priority', 'description', 'assigned_to']
+        
         widgets = {
-            "fund": forms.Select(attrs=STYLE),
-            "topic": forms.Select(attrs=STYLE),
-            "assigned_to": forms.Select(attrs=STYLE),
-            "description": forms.Textarea(attrs={"rows": 2, **STYLE}),
-            "due_date": forms.DateInput(attrs={"type": "date", **STYLE}),
-            "notes": forms.Textarea(attrs={"rows": 3, **STYLE}),
+            'title': forms.TextInput(attrs={
+                'class': 'w-full px-4 py-2 bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500/20 outline-none transition-all',
+                'placeholder': 'e.g. Quarterly TDS Filing'
+            }),
+            'jurisdiction': forms.Select(attrs={
+                'class': 'w-full px-4 py-2 bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500/20 outline-none transition-all'
+            }),
+            'due_date': forms.DateInput(attrs={
+                'type': 'date',
+                'class': 'w-full px-4 py-2 bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500/20 outline-none transition-all'
+            }),
+            'priority': forms.Select(attrs={
+                'class': 'w-full px-4 py-2 bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500/20 outline-none transition-all'
+            }),
+            'description': forms.Textarea(attrs={
+                'rows': 3,
+                'class': 'w-full px-4 py-2 bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500/20 outline-none transition-all',
+                'placeholder': 'Add details about the filing requirements...'
+            }),
+            'assigned_to': forms.Select(attrs={
+                'class': 'w-full px-4 py-2 bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500/20 outline-none transition-all'
+            }),
         }
 
-class ComplianceTaskUpdateForm(forms.ModelForm):
-    class Meta:
-        model = ComplianceTask
-        fields = ["status", "due_date", "assigned_to", "notes", "description"] 
-        widgets = {
-            "status": forms.Select(attrs=STYLE),
-            "assigned_to": forms.Select(attrs=STYLE),
-            "description": forms.Textarea(attrs={"rows": 2, **STYLE}),
-            "due_date": forms.DateInput(attrs={"type": "date", **STYLE}),
-            "notes": forms.Textarea(attrs={"rows": 3, **STYLE}),
-        }
-
-    def clean(self):
-        cleaned = super().clean()
-        status = (cleaned.get("status") or "").upper()
-        valid = {s[0] for s in ComplianceTask.STATUS_CHOICES}
-        if status and status not in valid:
-            cleaned["status"] = "PENDING"
-        return cleaned
 
 class ComplianceDocumentForm(forms.ModelForm):
     # Defined explicitly because it is NOT in the database model

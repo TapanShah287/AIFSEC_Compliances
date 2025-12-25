@@ -1,88 +1,97 @@
-{% extends "base.html" %}
+{% extends 'base.html' %}
+{% load humanize %}
 
-{% block title %}Funds Registry • AIF SEC{% endblock %}
+{% block title %}Managed Funds{% endblock %}
 
 {% block content %}
-<!-- Page Header with Scale Toggle -->
-<div class="flex flex-col md:flex-row md:items-end justify-between mb-8 gap-6">
+<div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
     <div>
-        <h1 class="text-3xl font-bold text-dark tracking-tight">Funds Registry</h1>
-        <p class="text-secondary mt-1 font-medium italic">Monitor aggregate capital and compliance health across schemes.</p>
+        <h1 class="text-2xl font-bold text-slate-900">Fund Schemes</h1>
+        <p class="text-slate-500 text-sm mt-1">Overview of all active AIFs and VCFs under management.</p>
     </div>
-
-    <div class="flex flex-col items-end gap-3">
-        <!-- Scale Switcher: Allows viewing in raw units, Crores, or Millions -->
-        <div class="bg-white p-1 rounded-xl shadow-sm border border-slate-200 inline-flex text-[10px] font-black uppercase tracking-widest overflow-hidden">
-            <a href="?denom=raw" class="px-3 py-2 rounded-lg transition-all {% if denom == 'raw' or not denom %}bg-dark text-white shadow-sm{% else %}text-secondary hover:text-dark{% endif %}">INR</a>
-            <a href="?denom=cr" class="px-3 py-2 rounded-lg transition-all {% if denom == 'cr' %}bg-primary text-white shadow-sm{% else %}text-secondary hover:text-dark{% endif %}">Crores</a>
-            <a href="?denom=m" class="px-3 py-2 rounded-lg transition-all {% if denom == 'm' %}bg-indigo-600 text-white shadow-sm{% else %}text-secondary hover:text-dark{% endif %}">Millions</a>
-        </div>
-        
-        <a href="{% url 'funds:fund_add' %}" class="bg-primary text-white px-5 py-2.5 rounded-xl font-bold text-sm shadow-lg shadow-indigo-100 hover:bg-indigo-700 transition flex items-center gap-2">
-            <i class="bi bi-plus-lg"></i> New Fund
-        </a>
-    </div>
+    <a href="{% url 'funds:fund_add' %}" class="bg-indigo-600 hover:bg-indigo-700 text-white px-5 py-2.5 rounded-xl font-medium text-sm shadow-lg shadow-indigo-200 flex items-center gap-2 transition-all">
+        <i data-lucide="plus-square" class="w-4 h-4"></i> Launch New Fund
+    </a>
 </div>
 
-<!-- Main Registry Table -->
-<div class="bg-white rounded-3xl shadow-sm border border-slate-100 overflow-hidden">
-    <div class="overflow-x-auto">
-        <table class="w-full text-left border-collapse">
-            <thead>
-                <tr class="bg-slate-50/50 border-b border-slate-100 text-[10px] uppercase tracking-widest text-secondary font-black">
-                    <th class="px-8 py-5">Scheme Identity</th>
-                    <th class="px-6 py-5">Category & Jurisdiction</th>
-                    <th class="px-6 py-5 text-right">Fund Corpus</th>
-                    <th class="px-6 py-5 text-right">Available (Uncalled)</th>
-                    <th class="px-8 py-5 text-right">Details</th>
-                </tr>
-            </thead>
-            <tbody class="divide-y divide-slate-50">
-                {% for item in funds %}
-                <tr class="hover:bg-slate-50/80 transition group">
-                    <td class="px-8 py-5">
-                        <div class="font-bold text-dark">{{ item.fund.name }}</div>
-                        <div class="text-[10px] text-slate-400 font-mono mt-0.5 uppercase tracking-tighter">
-                            {{ item.fund.sebi_registration_number|default:"Registration Pending" }}
-                        </div>
-                    </td>
-                    <td class="px-6 py-5">
-                        <div class="flex flex-wrap gap-1.5">
-                            <span class="px-2 py-0.5 bg-slate-100 text-slate-600 rounded text-[9px] font-black uppercase tracking-wider">
-                                {{ item.fund.get_category_display }}
-                            </span>
-                            <span class="px-2 py-0.5 {% if item.fund.jurisdiction == 'IFSC' %}bg-purple-100 text-purple-700{% else %}bg-blue-100 text-blue-700{% endif %} rounded text-[9px] font-black uppercase tracking-wider">
-                                {{ item.fund.get_jurisdiction_display }}
-                            </span>
-                        </div>
-                    </td>
-                    <!-- Currency Symbol logic: Prepended to amounts -->
-                    <td class="px-6 py-5 text-right font-bold text-slate-700">
-                        {{ item.fund.currency.symbol }}{{ item.corpus|floatformat:2 }} <span class="text-[10px] text-slate-400 font-bold uppercase">{{ suffix }}</span>
-                    </td>
-                    <td class="px-6 py-5 text-right">
-                        <span class="px-3 py-1 bg-indigo-50 text-primary rounded-full text-xs font-black">
-                            {{ item.fund.currency.symbol }}{{ item.available_cash|floatformat:2 }} {{ suffix }}
-                        </span>
-                    </td>
-                    <td class="px-8 py-5 text-right">
-                        <a href="{% url 'funds:fund_detail' item.fund.pk %}" class="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-white border border-slate-200 text-secondary hover:text-primary hover:border-primary transition-all shadow-sm">
-                            <i class="bi bi-arrow-right"></i>
-                        </a>
-                    </td>
-                </tr>
-                {% empty %}
-                <tr>
-                    <td colspan="5" class="px-8 py-20 text-center">
-                        <div class="flex flex-col items-center">
-                            <i class="bi bi-inbox text-5xl text-slate-100 mb-4"></i>
-                            <p class="text-secondary font-medium">No active funds found. Create a new scheme to begin.</p>
-                        </div>
-                    </td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
+<div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+    {% for fund in funds %}
+    <div class="group bg-white rounded-2xl border border-slate-200 hover:border-indigo-300 hover:shadow-xl hover:shadow-slate-200/50 transition-all duration-300 flex flex-col overflow-hidden">
+        
+        <div class="p-6 border-b border-slate-50">
+            <div class="flex justify-between items-start mb-4">
+                <div class="w-12 h-12 rounded-xl bg-slate-50 border border-slate-100 flex items-center justify-center text-slate-700 font-bold text-lg group-hover:bg-indigo-600 group-hover:text-white transition-colors">
+                    {{ fund.name|slice:":2"|upper }}
+                </div>
+                {% if fund.jurisdiction == 'IFSC' %}
+                <span class="px-2.5 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wide bg-emerald-50 text-emerald-700 border border-emerald-100 flex items-center gap-1">
+                    <i data-lucide="globe" class="w-3 h-3"></i> GIFT City
+                </span>
+                {% else %}
+                <span class="px-2.5 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wide bg-blue-50 text-blue-700 border border-blue-100">
+                    Domestic AIF
+                </span>
+                {% endif %}
+            </div>
+            
+            <h3 class="text-lg font-bold text-slate-900 mb-1 group-hover:text-indigo-600 transition-colors">
+                <a href="{% url 'funds:fund_detail' fund.pk %}">{{ fund.name }}</a>
+            </h3>
+            <p class="text-xs text-slate-500 flex items-center gap-2">
+                <span>{{ fund.get_category_display }}</span>
+                <span class="w-1 h-1 bg-slate-300 rounded-full"></span>
+                <span>{{ fund.sebi_registration_number|default:"Reg: Pending" }}</span>
+            </p>
+        </div>
+
+        <div class="p-6 flex-1">
+            <div class="space-y-5">
+                <div>
+                    <div class="flex justify-between text-xs mb-2">
+                        <span class="text-slate-500 font-medium">Target Corpus</span>
+                        <span class="text-slate-900 font-bold">{{ fund.currency.symbol }} {{ fund.corpus|intword }}</span>
+                    </div>
+                    <div class="w-full bg-slate-100 rounded-full h-2 overflow-hidden">
+                        <div class="bg-indigo-500 h-2 rounded-full" style="width: 65%"></div>
+                    </div>
+                    <div class="flex justify-between text-[10px] mt-1.5 text-slate-400">
+                        <span>Raised: 65%</span>
+                        <span>Remaining: 35%</span>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-2 gap-4 pt-2">
+                    <div class="bg-slate-50 p-3 rounded-xl border border-slate-100">
+                        <p class="text-[10px] text-slate-400 uppercase font-bold tracking-wider">NAV</p>
+                        <p class="text-sm font-bold text-slate-800 mt-0.5">104.25</p>
+                    </div>
+                    <div class="bg-slate-50 p-3 rounded-xl border border-slate-100">
+                        <p class="text-[10px] text-slate-400 uppercase font-bold tracking-wider">Vintage</p>
+                        <p class="text-sm font-bold text-slate-800 mt-0.5">{{ fund.date_of_inception|date:"Y" }}</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="p-4 bg-slate-50 border-t border-slate-100 flex justify-between items-center">
+            <a href="{% url 'funds:fund_detail' fund.pk %}" class="text-xs font-bold text-indigo-600 hover:text-indigo-800 transition-colors">
+                Open Dashboard &rarr;
+            </a>
+            <div class="flex gap-2">
+                <button class="p-2 hover:bg-white rounded-lg text-slate-400 hover:text-slate-700 transition-colors" title="Settings">
+                    <i data-lucide="settings" class="w-4 h-4"></i>
+                </button>
+            </div>
+        </div>
     </div>
+    {% endfor %}
+
+    <a href="{% url 'funds:fund_add' %}" class="group border-2 border-dashed border-slate-200 rounded-2xl p-6 flex flex-col items-center justify-center text-center hover:border-indigo-400 hover:bg-indigo-50/30 transition-all min-h-[300px]">
+        <div class="w-16 h-16 bg-slate-50 rounded-full flex items-center justify-center text-slate-400 mb-4 group-hover:bg-indigo-100 group-hover:text-indigo-600 transition-colors">
+            <i data-lucide="plus" class="w-8 h-8"></i>
+        </div>
+        <h3 class="text-slate-900 font-bold mb-1">Create New Scheme</h3>
+        <p class="text-xs text-slate-500 max-w-[200px]">Launch a new Cat I/II/III AIF or set up a Gift City feeder.</p>
+    </a>
 </div>
 {% endblock %}

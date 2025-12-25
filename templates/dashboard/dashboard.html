@@ -1,122 +1,124 @@
 {% extends 'base.html' %}
-{% block title %}System Overview • AIF SEC{% endblock %}
+{% load humanize %}
+
+{% block title %}Executive Overview{% endblock %}
 
 {% block content %}
-<div class="flex flex-col md:flex-row md:items-end justify-between mb-10 gap-4">
-    <div>
-        <h1 class="text-4xl font-extrabold text-dark tracking-tight">System Overview</h1>
-        <p class="text-secondary mt-2 text-lg">Centralized monitoring for AIF operations and capital flow.</p>
+<div class="mb-8">
+    <h1 class="text-2xl font-bold text-slate-900">Good Morning, Team.</h1>
+    <p class="text-slate-500 text-sm">Here is your daily compliance and operations snapshot.</p>
+</div>
+
+<div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+    <div class="bg-gradient-to-br from-indigo-600 to-indigo-700 rounded-2xl p-6 text-white shadow-lg shadow-indigo-200">
+        <div class="flex justify-between items-start">
+            <div>
+                <p class="text-indigo-200 text-xs font-bold uppercase tracking-wider">Total AUM</p>
+                <h3 class="text-2xl font-bold mt-1">₹ 245.8 Cr</h3>
+            </div>
+            <div class="p-2 bg-white/10 rounded-lg">
+                <i data-lucide="bar-chart-2" class="w-5 h-5 text-indigo-100"></i>
+            </div>
+        </div>
+        <div class="mt-4 flex items-center gap-2 text-xs text-indigo-100">
+            <span class="bg-white/20 px-1.5 py-0.5 rounded text-white font-medium">+12%</span>
+            <span>since last quarter</span>
+        </div>
     </div>
 
-    <!-- Denomination Switcher Toggle -->
-    <div class="bg-white p-1 rounded-xl shadow-sm border border-slate-200 inline-flex text-[10px] font-black uppercase tracking-widest overflow-hidden">
-        <a href="?denom=raw" class="px-3 py-2 rounded-lg transition-all {% if denom == 'raw' %}bg-dark text-white shadow-sm{% else %}text-secondary hover:text-dark{% endif %}">
-            INR
-        </a>
-        <a href="?denom=cr" class="px-3 py-2 rounded-lg transition-all {% if denom == 'cr' %}bg-primary text-white shadow-sm{% else %}text-secondary hover:text-dark{% endif %}">
-            Crores
-        </a>
-        <a href="?denom=m" class="px-3 py-2 rounded-lg transition-all {% if denom == 'm' %}bg-indigo-600 text-white shadow-sm{% else %}text-secondary hover:text-dark{% endif %}">
-            Millions
-        </a>
+    <div class="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm">
+         <div class="flex justify-between items-start">
+            <div>
+                <p class="text-slate-400 text-xs font-bold uppercase tracking-wider">Active Funds</p>
+                <h3 class="text-2xl font-bold text-slate-900 mt-1">04</h3>
+            </div>
+            <div class="p-2 bg-slate-50 rounded-lg">
+                <i data-lucide="layers" class="w-5 h-5 text-slate-400"></i>
+            </div>
+        </div>
+        <p class="text-xs text-slate-500 mt-4">2 Domestic • 2 GIFT City</p>
+    </div>
+
+    <div class="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm border-l-4 border-l-amber-400">
+         <div class="flex justify-between items-start">
+            <div>
+                <p class="text-slate-400 text-xs font-bold uppercase tracking-wider">Pending KYC</p>
+                <h3 class="text-2xl font-bold text-slate-900 mt-1">12</h3>
+            </div>
+            <div class="p-2 bg-amber-50 rounded-lg">
+                <i data-lucide="user-check" class="w-5 h-5 text-amber-500"></i>
+            </div>
+        </div>
+        <a href="{% url 'investors:portal-list' %}" class="text-xs font-semibold text-amber-600 mt-4 inline-block hover:underline">Review Applicants &rarr;</a>
+    </div>
+
+    <div class="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm border-l-4 border-l-red-500">
+         <div class="flex justify-between items-start">
+            <div>
+                <p class="text-slate-400 text-xs font-bold uppercase tracking-wider">Filings Due</p>
+                <h3 class="text-2xl font-bold text-slate-900 mt-1">02</h3>
+            </div>
+            <div class="p-2 bg-red-50 rounded-lg">
+                <i data-lucide="alert-octagon" class="w-5 h-5 text-red-500"></i>
+            </div>
+        </div>
+        <p class="text-xs text-red-500 font-medium mt-4">SEBI Quarterly Report due in 3 days.</p>
     </div>
 </div>
 
-<!-- Row 1: Operational Counts -->
-<div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
-    <a href="{% url 'funds:portal-funds' %}" class="bg-white p-8 rounded-3xl border border-slate-100 shadow-sm flex items-center justify-between group hover:border-primary/30 transition-all">
-        <div>
-            <p class="text-[10px] font-black text-secondary uppercase tracking-widest mb-1">Active Funds</p>
-            <p class="text-3xl font-bold text-dark">{{ fund_count }}</p>
-        </div>
-        <div class="w-14 h-14 bg-indigo-50 rounded-2xl flex items-center justify-center text-primary group-hover:bg-primary group-hover:text-white transition-all">
-            <i class="bi bi-safe2 text-2xl"></i>
-        </div>
-    </a>
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
     
-    <a href="{% url 'investors:portal-list' %}" class="bg-white p-8 rounded-3xl border border-slate-100 shadow-sm flex items-center justify-between group hover:border-primary/30 transition-all">
-        <div>
-            <p class="text-[10px] font-black text-secondary uppercase tracking-widest mb-1">Total Investors</p>
-            <p class="text-3xl font-bold text-dark">{{ investor_count }}</p>
-        </div>
-        <div class="w-14 h-14 bg-slate-50 rounded-2xl flex items-center justify-center text-slate-400 group-hover:bg-primary group-hover:text-white transition-all">
-            <i class="bi bi-people text-2xl"></i>
-        </div>
-    </a>
+    <div class="lg:col-span-2 space-y-6">
+        <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-6">
+            <h3 class="font-bold text-slate-900 mb-6 flex items-center gap-2">
+                <i data-lucide="activity" class="w-4 h-4 text-indigo-500"></i> Recent Activity
+            </h3>
+            
+            <div class="relative border-l border-slate-200 ml-3 space-y-8">
+                <div class="relative pl-8">
+                    <div class="absolute -left-1.5 top-1.5 w-3 h-3 bg-emerald-500 rounded-full ring-4 ring-white"></div>
+                    <div>
+                        <p class="text-sm font-semibold text-slate-800">Funds Received: ₹ 2.5 Cr</p>
+                        <p class="text-xs text-slate-500 mt-0.5">Wire transfer from <span class="font-medium text-slate-700">Greenwood Family Office</span> cleared.</p>
+                        <span class="text-[10px] text-slate-400 mt-1 block">2 hours ago</span>
+                    </div>
+                </div>
 
-    <a href="{% url 'investee_companies:portal-list' %}" class="bg-white p-8 rounded-3xl border border-slate-100 shadow-sm flex items-center justify-between group hover:border-primary/30 transition-all">
-        <div>
-            <p class="text-[10px] font-black text-secondary uppercase tracking-widest mb-1">Portfolio Entities</p>
-            <p class="text-3xl font-bold text-dark">{{ company_count }}</p>
-        </div>
-        <div class="w-14 h-14 bg-slate-50 rounded-2xl flex items-center justify-center text-slate-400 group-hover:bg-primary group-hover:text-white transition-all">
-            <i class="bi bi-building text-2xl"></i>
-        </div>
-    </a>
-</div>
+                <div class="relative pl-8">
+                    <div class="absolute -left-1.5 top-1.5 w-3 h-3 bg-indigo-500 rounded-full ring-4 ring-white"></div>
+                    <div>
+                        <p class="text-sm font-semibold text-slate-800">New Investor Onboarded</p>
+                        <p class="text-xs text-slate-500 mt-0.5">Rahul Mehta completed KYC verification.</p>
+                        <span class="text-[10px] text-slate-400 mt-1 block">5 hours ago</span>
+                    </div>
+                </div>
 
-<!-- Row 2: Fund Financial Overview -->
-<div class="mb-10">
-    <div class="flex items-center gap-3 mb-6">
-        <div class="h-8 w-1.5 bg-primary rounded-full"></div>
-        <h2 class="text-xl font-bold text-dark tracking-tight">Financial Overview {% if suffix %}(in {{ suffix }}){% endif %}</h2>
-    </div>
-    
-    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
-        <div class="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm">
-            <p class="text-[10px] font-black text-secondary uppercase tracking-widest mb-2">Drawdowns</p>
-            <p class="text-xl font-bold text-dark">₹{{ stats.total_drawdowns }} {{ suffix }}</p>
-            <p class="text-[10px] text-slate-400 mt-1 italic">Capital Called</p>
-        </div>
-
-        <div class="bg-indigo-600 p-6 rounded-2xl shadow-xl shadow-indigo-100 border border-indigo-500">
-            <p class="text-[10px] font-black text-indigo-100 uppercase tracking-widest mb-2">Available Cash</p>
-            <p class="text-xl font-bold text-white">₹{{ stats.cash_available }} {{ suffix }}</p>
-            <p class="text-[10px] text-indigo-200 mt-1 italic">Net Liquidity</p>
-        </div>
-
-        <div class="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm">
-            <p class="text-[10px] font-black text-secondary uppercase tracking-widest mb-2">Investments</p>
-            <p class="text-xl font-bold text-dark">₹{{ stats.total_investments }} {{ suffix }}</p>
-            <p class="text-[10px] text-slate-400 mt-1 italic">Capital Deployed</p>
-        </div>
-
-        <div class="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm">
-            <p class="text-[10px] font-black text-secondary uppercase tracking-widest mb-2">Redemptions</p>
-            <p class="text-xl font-bold text-emerald-600">₹{{ stats.total_redemptions }} {{ suffix }}</p>
-            <p class="text-[10px] text-slate-400 mt-1 italic">Exit Inflows</p>
-        </div>
-
-        <div class="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm">
-            <p class="text-[10px] font-black text-secondary uppercase tracking-widest mb-2">Distributions</p>
-            <p class="text-xl font-bold text-rose-600">₹{{ stats.total_distributions }} {{ suffix }}</p>
-            <p class="text-[10px] text-slate-400 mt-1 italic">Returned to LPs</p>
+                <div class="relative pl-8">
+                    <div class="absolute -left-1.5 top-1.5 w-3 h-3 bg-slate-300 rounded-full ring-4 ring-white"></div>
+                    <div>
+                        <p class="text-sm font-semibold text-slate-800">Document Uploaded</p>
+                        <p class="text-xs text-slate-500 mt-0.5">Valuation Report (Dec 2024) uploaded for Fund II.</p>
+                        <span class="text-[10px] text-slate-400 mt-1 block">Yesterday</span>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
-</div>
 
-<!-- Row 3: Quick Navigation -->
-<div class="grid grid-cols-1 md:grid-cols-2 gap-8">
-    <div class="bg-dark p-8 rounded-3xl shadow-2xl text-white relative overflow-hidden">
-        <div class="relative z-10">
-            <h3 class="text-xl font-bold mb-2">Financial Ledger</h3>
-            <p class="text-slate-400 text-sm mb-6">Review all historical journals and transaction logs.</p>
-            <a href="{% url 'portal-transactions' %}" class="inline-flex items-center px-6 py-2.5 bg-primary text-white font-bold rounded-xl text-xs hover:bg-indigo-600 transition shadow-lg shadow-primary/20">
-                Open Ledger <i class="bi bi-arrow-right ml-2"></i>
-            </a>
+    <div class="space-y-6">
+        <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-6">
+            <h3 class="font-bold text-slate-900 mb-4">Quick Actions</h3>
+            <div class="grid grid-cols-2 gap-3">
+                <a href="{% url 'investors:portal-add' %}" class="flex flex-col items-center justify-center p-4 bg-slate-50 hover:bg-indigo-50 rounded-xl border border-slate-100 hover:border-indigo-100 transition-all text-center group">
+                    <i data-lucide="user-plus" class="w-6 h-6 text-slate-400 group-hover:text-indigo-600 mb-2 transition-colors"></i>
+                    <span class="text-xs font-semibold text-slate-600 group-hover:text-indigo-700">Add Investor</span>
+                </a>
+                <button class="flex flex-col items-center justify-center p-4 bg-slate-50 hover:bg-indigo-50 rounded-xl border border-slate-100 hover:border-indigo-100 transition-all text-center group">
+                    <i data-lucide="file-plus" class="w-6 h-6 text-slate-400 group-hover:text-indigo-600 mb-2 transition-colors"></i>
+                    <span class="text-xs font-semibold text-slate-600 group-hover:text-indigo-700">New Task</span>
+                </button>
+            </div>
         </div>
-        <i class="bi bi-journal-text absolute -right-6 -bottom-6 text-9xl text-slate-800 opacity-50"></i>
-    </div>
-
-    <div class="bg-white p-8 rounded-3xl border border-slate-100 shadow-sm relative overflow-hidden">
-        <div class="relative z-10">
-            <h3 class="text-xl font-bold mb-2 text-dark">Compliance Tasks</h3>
-            <p class="text-secondary text-sm mb-6">You have <span class="text-danger font-bold">{{ overdue_count|default:0 }} overdue</span> obligations.</p>
-            <a href="{% url 'compliances:portal-home' %}" class="inline-flex items-center px-6 py-2.5 bg-slate-100 text-dark font-bold rounded-xl text-xs hover:bg-slate-200 transition">
-                Manage Compliance
-            </a>
-        </div>
-        <i class="bi bi-shield-check absolute -right-6 -bottom-6 text-9xl text-slate-50 opacity-50"></i>
     </div>
 </div>
 {% endblock %}

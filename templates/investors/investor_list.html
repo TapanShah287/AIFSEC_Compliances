@@ -1,102 +1,173 @@
-{% extends "base.html" %}
+{% extends 'base.html' %}
+{% load humanize %}
 
-{% block title %}Investor Registry • AIF SEC{% endblock %}
+{% block title %}Investor Registry{% endblock %}
 
 {% block content %}
-<div class="flex flex-col md:flex-row md:items-end justify-between mb-8 gap-6">
+<div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
     <div>
-        <h1 class="text-3xl font-bold text-dark tracking-tight">Investor Registry</h1>
-        <p class="text-secondary mt-1 font-medium">Manage KYC, accreditation, and capital commitments for all partners.</p>
+        <h1 class="text-2xl font-bold text-slate-900">Investors</h1>
+        <p class="text-slate-500 text-sm mt-1">Manage KYC, Accreditations, and Capital Commitments.</p>
+    </div>
+    <div class="flex gap-3">
+        <button class="bg-white border border-slate-300 text-slate-700 hover:bg-slate-50 px-4 py-2.5 rounded-xl font-medium text-sm flex items-center gap-2 transition-all">
+            <i data-lucide="download" class="w-4 h-4"></i> Export CSV
+        </button>
+        <a href="{% url 'investors:portal-add' %}" class="bg-indigo-600 hover:bg-indigo-700 text-white px-5 py-2.5 rounded-xl font-medium text-sm shadow-lg shadow-indigo-200 flex items-center gap-2 transition-all">
+            <i data-lucide="plus" class="w-4 h-4"></i> Onboard Investor
+        </a>
+    </div>
+</div>
+
+<div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+    <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex items-center justify-between">
+        <div>
+            <p class="text-slate-500 text-xs font-bold uppercase tracking-wider">Total Commitments</p>
+            <h3 class="text-2xl font-bold text-slate-900 mt-1">₹ {{ total_committed_aggregate|default:"0"|intcomma }}</h3>
+        </div>
+        <div class="w-10 h-10 rounded-lg bg-indigo-50 flex items-center justify-center text-indigo-600">
+            <i data-lucide="wallet" class="w-5 h-5"></i>
+        </div>
+    </div>
+    
+    <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex items-center justify-between">
+        <div>
+            <p class="text-slate-500 text-xs font-bold uppercase tracking-wider">Total Contributed</p>
+            <h3 class="text-2xl font-bold text-slate-900 mt-1">₹ {{ total_contributed_aggregate|default:"0"|intcomma }}</h3>
+        </div>
+        <div class="w-10 h-10 rounded-lg bg-emerald-50 flex items-center justify-center text-emerald-600">
+            <i data-lucide="arrow-down-to-line" class="w-5 h-5"></i>
+        </div>
     </div>
 
-    <div class="flex flex-col items-end gap-3">
-        <!-- SCALE TOGGLE (INR / Crores / Millions) -->
-        <div class="bg-white p-1 rounded-xl shadow-sm border border-slate-200 inline-flex text-[10px] font-black uppercase tracking-widest overflow-hidden">
-            <a href="?denom=raw" class="px-3 py-2 rounded-lg transition-all {% if denom == 'raw' or not denom %}bg-dark text-white shadow-sm{% else %}text-secondary hover:text-dark{% endif %}">INR</a>
-            <a href="?denom=cr" class="px-3 py-2 rounded-lg transition-all {% if denom == 'cr' %}bg-primary text-white shadow-sm{% else %}text-secondary hover:text-dark{% endif %}">Crores</a>
-            <a href="?denom=m" class="px-3 py-2 rounded-lg transition-all {% if denom == 'm' %}bg-indigo-600 text-white shadow-sm{% else %}text-secondary hover:text-dark{% endif %}">Millions</a>
+    <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex items-center justify-between border-l-4 border-l-amber-400">
+        <div>
+            <p class="text-slate-500 text-xs font-bold uppercase tracking-wider">Pending KYC</p>
+            <h3 class="text-2xl font-bold text-slate-900 mt-1">{{ pending_kyc_count|default:"0" }}</h3>
+            <p class="text-[10px] text-amber-600 font-medium mt-1">Action Required</p>
         </div>
-        
-        <div class="flex gap-3">
-            <a href="{% url 'investors:portal-add' %}" class="bg-primary text-white px-5 py-2.5 rounded-xl font-bold text-sm shadow-lg shadow-indigo-200 hover:bg-indigo-700 transition flex items-center gap-2">
-                <i class="bi bi-person-plus-fill"></i> New Investor
-            </a>
+        <div class="w-10 h-10 rounded-lg bg-amber-50 flex items-center justify-center text-amber-500">
+            <i data-lucide="file-warning" class="w-5 h-5"></i>
         </div>
     </div>
 </div>
 
-<div class="bg-white rounded-3xl shadow-sm border border-slate-100 overflow-hidden">
-    <div class="overflow-x-auto">
-        <table class="w-full text-left border-collapse">
-            <thead>
-                <tr class="bg-slate-50/50 border-b border-slate-100 text-xs uppercase tracking-widest text-secondary font-bold">
-                    <th class="px-8 py-5">Investor Name</th>
-                    <th class="px-6 py-5">Type & Compliance</th>
-                    <th class="px-6 py-5 text-right">Total Committed</th>
-                    <th class="px-6 py-5 text-right">Uncalled (Dry Powder)</th>
-                    <th class="px-6 py-5 text-center">KYC Status</th>
-                    <th class="px-8 py-5 text-right">Action</th>
-                </tr>
-            </thead>
-            <tbody class="divide-y divide-slate-50">
-                {% for item in investors %}
-                <tr class="hover:bg-slate-50/80 transition group">
-                    <td class="px-8 py-5">
-                        <div class="font-bold text-dark">{{ item.investor.name }}</div>
-                        <div class="text-[10px] text-slate-400 font-mono mt-0.5 uppercase">{{ item.investor.pan }}</div>
-                    </td>
-                    <td class="px-6 py-5">
-                        <div class="flex flex-wrap gap-1.5">
-                            <span class="px-2 py-0.5 bg-slate-100 text-slate-600 rounded text-[10px] font-bold uppercase tracking-wider">
-                                {{ item.investor.get_investor_type_display }}
-                            </span>
-                            
-                            <!-- 2025 Accreditation Badge -->
-                            {% if item.investor.accreditation_status == 'VALID' %}
-                                <span class="px-2 py-0.5 bg-emerald-50 text-emerald-600 rounded text-[10px] font-bold uppercase tracking-wider border border-emerald-100">Accredited</span>
-                            {% elif item.investor.accreditation_status == 'EXPIRED' %}
-                                <span class="px-2 py-0.5 bg-rose-50 text-rose-600 rounded text-[10px] font-bold uppercase tracking-wider border border-rose-100">Expired</span>
-                            {% endif %}
+<div class="bg-white p-4 rounded-t-2xl border border-slate-200 border-b-0 flex flex-wrap gap-4 items-center justify-between">
+    <div class="relative w-full md:w-80">
+        <i data-lucide="search" class="absolute left-3 top-2.5 w-4 h-4 text-slate-400"></i>
+        <input type="text" placeholder="Search by Name, PAN or Email..." class="w-full pl-9 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-400 transition-all">
+    </div>
+
+    <div class="flex gap-3">
+        <select class="bg-slate-50 border border-slate-200 text-slate-600 text-sm rounded-lg focus:ring-indigo-500 focus:border-indigo-500 block px-3 py-2 outline-none cursor-pointer">
+            <option>All Statuses</option>
+            <option>Verified</option>
+            <option>Pending</option>
+        </select>
+        <select class="bg-slate-50 border border-slate-200 text-slate-600 text-sm rounded-lg focus:ring-indigo-500 focus:border-indigo-500 block px-3 py-2 outline-none cursor-pointer">
+            <option>All Types</option>
+            <option>Individual</option>
+            <option>Corporate</option>
+        </select>
+    </div>
+</div>
+
+<div class="bg-white rounded-b-2xl border border-slate-200 shadow-sm overflow-hidden">
+    <table class="w-full text-left border-collapse">
+        <thead class="bg-slate-50/50 border-b border-slate-200">
+            <tr>
+                <th class="px-6 py-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">Investor Entity</th>
+                <th class="px-6 py-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">Type</th>
+                <th class="px-6 py-4 text-xs font-semibold text-slate-500 uppercase tracking-wider text-center">KYC Status</th>
+                <th class="px-6 py-4 text-xs font-semibold text-slate-500 uppercase tracking-wider text-right">Commitment (₹)</th>
+                <th class="px-6 py-4 text-xs font-semibold text-slate-500 uppercase tracking-wider text-right">Funded %</th>
+                <th class="px-6 py-4 text-xs font-semibold text-slate-500 uppercase tracking-wider text-center">Action</th>
+            </tr>
+        </thead>
+        <tbody class="divide-y divide-slate-100">
+            {% for investor in investors %}
+            <tr class="group hover:bg-slate-50/80 transition-all duration-200">
+                <td class="px-6 py-4">
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center text-slate-500 font-bold text-xs uppercase group-hover:bg-white group-hover:shadow-md transition-all">
+                            {{ investor.name|slice:":2" }}
                         </div>
-                    </td>
-                    <td class="px-6 py-5 text-right font-bold text-slate-700">
-                        ₹{{ item.total_committed|floatformat:2 }} <span class="text-[10px] text-slate-400 font-bold uppercase">{{ suffix }}</span>
-                    </td>
-                    <td class="px-6 py-5 text-right">
-                        <span class="px-3 py-1 {% if item.uncalled_capital > 0 %}bg-indigo-50 text-primary{% else %}bg-slate-50 text-slate-400{% endif %} rounded-full text-xs font-black">
-                            ₹{{ item.uncalled_capital|floatformat:2 }} {{ suffix }}
-                        </span>
-                    </td>
-                    <td class="px-6 py-5 text-center">
-                        <div class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wider
-                            {% if item.kyc_status == 'VERIFIED' %}bg-green-100 text-green-700
-                            {% elif item.kyc_status == 'PENDING' %}bg-amber-100 text-amber-700
-                            {% elif item.kyc_status == 'REJECTED' %}bg-rose-100 text-rose-700
-                            {% else %}bg-slate-100 text-slate-600{% endif %}">
-                            {{ item.kyc_status }}
-                        </div>
-                    </td>
-                    <td class="px-8 py-5 text-right">
-                        <div class="flex justify-end gap-2">
-                            <a href="{% url 'investors:portal-detail' item.investor.pk %}" class="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-white border border-slate-200 text-secondary hover:text-primary hover:border-primary transition-all shadow-sm">
-                                <i class="bi bi-eye"></i>
+                        <div>
+                            <a href="{% url 'investors:portal-detail' investor.id %}" class="font-semibold text-slate-800 hover:text-indigo-600 transition-colors block">
+                                {{ investor.name }}
                             </a>
+                            <span class="text-[11px] text-slate-500 font-mono bg-slate-100 px-1.5 py-0.5 rounded">{{ investor.pan }}</span>
                         </div>
-                    </td>
-                </tr>
-                {% empty %}
-                <tr>
-                    <td colspan="6" class="px-8 py-20 text-center">
-                        <div class="flex flex-col items-center">
-                            <i class="bi bi-people text-5xl text-slate-100 mb-4"></i>
-                            <p class="text-secondary font-medium italic">No investors found in registry.</p>
-                            <a href="{% url 'investors:portal-add' %}" class="mt-4 text-primary font-bold text-sm">Onboard your first investor →</a>
+                    </div>
+                </td>
+                <td class="px-6 py-4 text-sm text-slate-600">
+                    {{ investor.get_investor_type_display }}
+                    {% if investor.accreditation_status == 'VALID' %}
+                        <div class="mt-1 flex items-center gap-1 text-[10px] text-indigo-600 font-medium">
+                            <i data-lucide="award" class="w-3 h-3"></i> Accredited
                         </div>
-                    </td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
+                    {% endif %}
+                </td>
+                <td class="px-6 py-4 text-center">
+                    {% if investor.kyc_status == 'VERIFIED' %}
+                        <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-100">
+                            <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span> Verified
+                        </span>
+                    {% elif investor.kyc_status == 'PENDING' %}
+                        <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-amber-50 text-amber-700 border border-amber-100">
+                            <span class="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse"></span> Pending
+                        </span>
+                    {% else %}
+                        <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-red-50 text-red-700 border border-red-100">
+                            Rejected
+                        </span>
+                    {% endif %}
+                </td>
+                <td class="px-6 py-4 text-right">
+                    <p class="font-bold text-slate-700">{{ investor.total_committed|intcomma }}</p>
+                    <p class="text-[10px] text-slate-400">Uncalled: {{ investor.uncalled_commitment|intcomma }}</p>
+                </td>
+                <td class="px-6 py-4 text-right">
+                    <div class="flex items-center justify-end gap-2">
+                        <span class="text-xs font-semibold text-slate-600">45%</span>
+                        <div class="w-16 h-1.5 bg-slate-100 rounded-full overflow-hidden">
+                            <div class="bg-indigo-500 h-full rounded-full" style="width: 45%"></div>
+                        </div>
+                    </div>
+                </td>
+                <td class="px-6 py-4 text-center">
+                    <div class="flex items-center justify-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <a href="{% url 'investors:portal-detail' investor.id %}" class="p-2 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors" title="View Profile">
+                            <i data-lucide="eye" class="w-4 h-4"></i>
+                        </a>
+                        <a href="#" class="p-2 text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 rounded-lg transition-colors" title="Edit">
+                            <i data-lucide="edit-2" class="w-4 h-4"></i>
+                        </a>
+                    </div>
+                </td>
+            </tr>
+            {% endfor %}
+            
+            {% if not investors %}
+            <tr>
+                <td colspan="6" class="px-6 py-12 text-center">
+                    <div class="w-16 h-16 bg-slate-50 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <i data-lucide="users" class="w-8 h-8 text-slate-300"></i>
+                    </div>
+                    <h3 class="text-slate-900 font-medium">No Investors Found</h3>
+                    <p class="text-slate-500 text-sm mt-1">Get started by onboarding your first investor.</p>
+                </td>
+            </tr>
+            {% endif %}
+        </tbody>
+    </table>
+    
+    <div class="bg-slate-50 px-6 py-4 border-t border-slate-200 flex items-center justify-between">
+        <p class="text-xs text-slate-500">Showing <span class="font-bold text-slate-700">1-10</span> of <span class="font-bold text-slate-700">{{ investors.count }}</span> results</p>
+        <div class="flex gap-2">
+            <button class="px-3 py-1 text-xs font-medium text-slate-500 bg-white border border-slate-200 rounded hover:bg-slate-50 disabled:opacity-50">Previous</button>
+            <button class="px-3 py-1 text-xs font-medium text-slate-500 bg-white border border-slate-200 rounded hover:bg-slate-50">Next</button>
+        </div>
     </div>
 </div>
 {% endblock %}

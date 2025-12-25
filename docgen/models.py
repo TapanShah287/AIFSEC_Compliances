@@ -1,15 +1,20 @@
 from django.db import models
 from django.conf import settings
-from django.utils import timezone
 
 class DocumentTemplate(models.Model):
-    """
-    Stores the .docx template files uploaded by Admin.
-    Code is used in views to find the right template (e.g., 'KYC_INDIVIDUAL').
-    """
+    TEMPLATE_TYPES = [
+        ('DOCX', 'Word Document (.docx)'),
+        ('HTML', 'HTML Layout (for PDF)'),
+    ]
+    
     name = models.CharField(max_length=255)
-    code = models.SlugField(unique=True, help_text="Unique code to reference in code (e.g., COMMITMENT_LETTER)")
-    file = models.FileField(upload_to='docgen/templates/')
+    code = models.SlugField(unique=True, help_text="Unique code (e.g. CAPITAL_CALL)")
+    type = models.CharField(max_length=10, choices=TEMPLATE_TYPES, default='DOCX')
+    
+    # Dual storage: File for DOCX, Text for HTML
+    file = models.FileField(upload_to='docgen/templates/', blank=True, null=True)
+    html_content = models.TextField(blank=True, null=True, help_text="Paste HTML for PDF templates here")
+    
     description = models.TextField(blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
@@ -17,23 +22,14 @@ class DocumentTemplate(models.Model):
         return f"{self.name} ({self.code})"
 
 class GeneratedDocument(models.Model):
-    """
-    Stores the result of the generation process.
-    """
     template = models.ForeignKey(DocumentTemplate, on_delete=models.SET_NULL, null=True)
-    generated_file = models.FileField(upload_to='docgen/generated/')
+    generated_file = models.FileField(upload_to='docgen/generated/%Y/%m/')
     created_at = models.DateTimeField(auto_now_add=True)
     created_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True)
 
-    # --- Relationships (Optional Links) ---
-    # We use string references to avoid circular imports
-    fund = models.ForeignKey('funds.Fund', on_delete=models.SET_NULL, null=True, blank=True, related_name='generated_docs')
-    investor = models.ForeignKey('investors.Investor', on_delete=models.SET_NULL, null=True, blank=True, related_name='generated_docs')
-    investee_company = models.ForeignKey('investee_companies.InvesteeCompany', on_delete=models.SET_NULL, null=True, blank=True, related_name='generated_docs')
+    # Smart Links to your existing apps
+    fund = models.ForeignKey('funds.Fund', on_delete=models.SET_NULL, null=True, blank=True)
+    investor = models.ForeignKey('investors.Investor', on_delete=models.SET_NULL, null=True, blank=True)
     
-    # Link to specific transactions if needed (e.g., for a specific Drawdown Notice)
-    capital_call = models.ForeignKey('transactions.CapitalCall', on_delete=models.SET_NULL, null=True, blank=True)
-    distribution = models.ForeignKey('transactions.Distribution', on_delete=models.SET_NULL, null=True, blank=True)
-
     def __str__(self):
-        return f"Doc {self.id} - {self.template.code if self.template else 'Custom'}"
+        return f"Doc #{self.id} - {self.template.code if self.template else 'Custom'}"

@@ -4,6 +4,7 @@ from django.contrib import messages
 from django.db.models import Sum
 from decimal import Decimal
 import json
+from django.db.models import F
 
 # DRF Imports for API
 from rest_framework import viewsets
@@ -11,6 +12,7 @@ from rest_framework.permissions import IsAuthenticated
 
 # Local Models & Serializers
 from .models import Fund, StewardshipEngagement, NavSnapshot
+from manager_entities.models import ManagerEntity
 from .forms import FundForm, StewardshipEngagementForm, NavSnapshotForm
 from .serializers import FundSerializer
 
@@ -18,10 +20,6 @@ from .serializers import FundSerializer
 from .analytics import FundAnalyticsService
 
 # Transaction Dependencies (For wrapper views)
-from transactions.forms import (
-    InvestorCommitmentForm, CapitalCallForm, 
-    DrawdownReceiptForm, DistributionForm
-)
 from transactions.models import PurchaseTransaction
 
 # =========================================================
@@ -32,39 +30,106 @@ class FundViewSet(viewsets.ModelViewSet):
     """
     API endpoint that allows Funds to be viewed or edited.
     """
-    queryset = Fund.objects.all().order_by('-date_of_inception')
     serializer_class = FundSerializer
     permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        manager_entity = get_current_manager_entity(self.request)
+        return Fund.objects.filter(
+            manager_entity=manager_entity
+        ).order_by('-date_of_inception')
 
 # =========================================================
 #  CORE FUND MANAGEMENT
 # =========================================================
 
 @login_required
+def calculate_nav_view(request, pk):
+    """
+    The NAV Computation Workspace.
+    Calculates Assets - Liabilities to derive Per Unit Value.
+    """
+    from transactions.models import PurchaseTransaction, DrawdownReceipt, Distribution
+
+    fund = get_object_or_404(Fund, pk=pk)
+    
+    # 1. Asset Side: Portfolio Fair Value
+    # In a real app, this pulls from the latest ShareValuation of investee companies
+    portfolio_value = PurchaseTransaction.objects.filter(fund=fund).aggregate(
+        total=Sum(F('quantity') * F('exchange_rate')) # Simplified logic
+    )['total'] or Decimal('0.00')
+
+    # 2. Asset Side: Cash Balance
+    total_inflow = DrawdownReceipt.objects.filter(fund=fund).aggregate(Sum('amount_received'))['amount_received__sum'] or 0
+    total_outflow = Distribution.objects.filter(fund=fund).aggregate(Sum('gross_amount'))['gross_amount__sum'] or 0
+    cash_balance = total_inflow - total_outflow - portfolio_value # Simplistic cash drag
+
+    # 3. Units Outstanding
+    total_units = fund.nav_snapshots.latest('as_on_date').units_outstanding if fund.nav_snapshots.exists() else Decimal('1.0')
+
+    # 4. NAV Calculation
+    net_assets = portfolio_value + cash_balance
+    nav_per_unit = net_assets / total_units if total_units > 0 else 0
+
+    context = {
+        'fund': fund,
+        'portfolio_value': portfolio_value,
+        'cash_balance': cash_balance,
+        'net_assets': net_assets,
+        'total_units': total_units,
+        'nav_per_unit': nav_per_unit,
+    }
+    return render(request, 'funds/nav_computation.html', context)
+
+def get_current_manager_entity(request):
+    """
+    For now: return the first (or only) ManagerEntity.
+    Later you can map request.user -> ManagerEntity.
+    """
+    # If you have only one manager, this is enough:
+    return ManagerEntity.objects.first()
+
+@login_required
 def portal_funds_list(request):
-    funds = Fund.objects.all().order_by('-date_of_inception')
-    # Simple summary stats per fund
+    manager_entity = get_current_manager_entity(request)
+    funds = Fund.objects.filter(
+        manager_entity=manager_entity
+    ).order_by('-date_of_inception')
+
     for f in funds:
         f.stats_committed = f.total_commitments
-        
-    return render(request, "funds/funds_list.html", {"funds": funds})
+
+    return render(request, "funds/funds_list.html", {
+        "funds": funds,
+        "manager_entity": manager_entity,
+    })
 
 @login_required
 def fund_add(request):
+    manager_entity = get_current_manager_entity(request)
+
     if request.method == "POST":
         form = FundForm(request.POST)
         if form.is_valid():
-            fund = form.save()
+            fund = form.save(commit=False)
+            fund.manager_entity = manager_entity
+            fund.save()
             messages.success(request, f"Fund '{fund.name}' initialized successfully.")
             return redirect('funds:fund_detail', pk=fund.pk)
     else:
         form = FundForm()
-    return render(request, "funds/fund_add.html", {"form": form})
+
+    return render(request, "funds/fund_add.html", {
+        "form": form,
+        "manager_entity": manager_entity,
+    })
 
 @login_required
 def fund_detail(request, pk):
     fund = get_object_or_404(Fund, pk=pk)
-    
+
+    from transactions.forms import CapitalCallForm
+
     # Initialize the renamed service
     analytics = FundAnalyticsService(fund)
     
@@ -175,7 +240,7 @@ def add_commitment(request, pk):
             return redirect('funds:fund_detail', pk=fund.pk)
     else:
         form = InvestorCommitmentForm(fund_context=fund)
-    return render(request, "transactions/add_commitment.html", {"fund": fund, "form": form})
+    return render(request, "funds/add_commitment.html", {"fund": fund, "form": form})
 
 @login_required
 def create_capital_call(request, pk):
@@ -190,7 +255,7 @@ def create_capital_call(request, pk):
             return redirect('funds:fund_detail', pk=fund.pk)
     else:
         form = CapitalCallForm(fund_context=fund)
-    return render(request, "transactions/create_call.html", {"fund": fund, "form": form})
+    return render(request, "funds/add_capital_call.html", {"fund": fund, "form": form})
 
 @login_required
 def add_receipt(request, pk):

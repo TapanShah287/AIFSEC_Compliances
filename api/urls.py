@@ -10,6 +10,7 @@ from investee_companies.views import (
     CorporateActionViewSet
 )
 from funds.views import FundViewSet
+from . import views
 from transactions.views import (
     PurchaseViewSet, 
     RedemptionViewSet, 
@@ -51,13 +52,16 @@ router.register(r"distributions", DistributionViewSet, basename="distribution")
 router.register(r"compliance/tasks", ComplianceTaskViewSet, basename="compliance-task")
 router.register(r"compliance/documents", ComplianceDocumentViewSet, basename="compliance-document")
 
+
 # DocGen
 router.register(r"docgen/templates", DocumentTemplateViewSet, basename="document-template")
 
 urlpatterns = [
     # Router URLs
     path("", include(router.urls)),
+
     
     # Custom/Non-ViewSet URLs
     path("investors/<int:pk>/kyc/", InvestorKYCView.as_view(), name="investor-kyc"),
+    path('search/', views.global_search, name='global-search'),
 ]

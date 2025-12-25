@@ -4,7 +4,7 @@ from .models import DocumentTemplate, GeneratedDocument
 class DocumentTemplateSerializer(serializers.ModelSerializer):
     class Meta:
         model = DocumentTemplate
-        fields = ['id', 'name', 'code', 'description']
+        fields = '__all__'
 
 class GeneratedDocumentSerializer(serializers.ModelSerializer):
     template_name = serializers.CharField(source='template.name', read_only=True)
@@ -12,4 +12,4 @@ class GeneratedDocumentSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = GeneratedDocument
-        fields = ['id', 'template_name', 'file_url', 'created_at']
+        fields = '__all__'

@@ -1,38 +1,25 @@
 from django.contrib import admin
-from .models import (
-    PurchaseTransaction, RedemptionTransaction,
-    InvestorCommitment, CapitalCall, DrawdownReceipt, 
-    Distribution, InvestorUnitIssue
-)
-
-@admin.register(PurchaseTransaction)
-class PurchaseAdmin(admin.ModelAdmin):
-    list_display = ('id', 'fund', 'investee_company', 'quantity', 'price', 'trade_date')
-    list_filter = ('fund', 'investee_company')
-
-@admin.register(RedemptionTransaction)
-class RedemptionAdmin(admin.ModelAdmin):
-    list_display = ('id', 'fund', 'investee_company', 'quantity', 'price', 'trade_date', 'realized_gain')
-    list_filter = ('fund', 'investee_company')
-
-@admin.register(InvestorCommitment)
-class CommitmentAdmin(admin.ModelAdmin):
-    list_display = ('id', 'fund', 'investor', 'amount_committed', 'commitment_date')
-    search_fields = ('investor__name',)
-
-@admin.register(CapitalCall)
-class CapitalCallAdmin(admin.ModelAdmin):
-    list_display = ('id', 'fund', 'investor', 'amount_called', 'call_date')
-    list_filter = ('fund',)
-
-@admin.register(DrawdownReceipt)
-class ReceiptAdmin(admin.ModelAdmin):
-    list_display = ('id', 'fund', 'investor', 'amount_received', 'receipt_date')
+from .models import Distribution, PurchaseTransaction, DrawdownReceipt, CapitalCall
 
 @admin.register(Distribution)
 class DistributionAdmin(admin.ModelAdmin):
-    list_display = ('id', 'fund', 'investor', 'gross_amount', 'paid_date')
+    # distribution_date instead of paid_date
+    list_display = ('fund', 'investor', 'distribution_type', 'gross_amount', 'distribution_date')
 
-@admin.register(InvestorUnitIssue)
-class UnitIssueAdmin(admin.ModelAdmin):
-    list_display = ('id', 'fund', 'investor', 'units_issued', 'nav_at_issue')
+@admin.register(PurchaseTransaction)
+class PurchaseAdmin(admin.ModelAdmin):
+    # price_per_share and transaction_date instead of price/trade_date
+    list_display = ('fund', 'investee_company', 'quantity', 'price_per_share', 'transaction_date')
+
+@admin.register(DrawdownReceipt)
+class ReceiptAdmin(admin.ModelAdmin):
+    # Using methods to pull fund/investor from the linked CapitalCall
+    list_display = ('transaction_ref', 'get_fund', 'get_investor', 'amount_received', 'received_date')
+
+    def get_fund(self, obj):
+        return obj.capital_call.fund
+    get_fund.short_description = 'Fund'
+
+    def get_investor(self, obj):
+        return obj.capital_call.investor
+    get_investor.short_description = 'Investor'

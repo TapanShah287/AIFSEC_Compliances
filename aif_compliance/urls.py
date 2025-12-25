@@ -28,6 +28,7 @@ urlpatterns = [
 
     # NEW: Transactions App URLs
     path('portal/txn/', include('transactions.urls')), 
+    path("portal/docgen/", include("docgen.urls")),
 
     # Root -> Dashboard
     path("", TemplateView.as_view(template_name="dashboard/dashboard.html"), name="index"),

@@ -1,9 +1,12 @@
 from django.urls import path
 from . import views
 
-app_name = 'transactions'
-
 urlpatterns = [
-    path('fund/<int:fund_pk>/purchase/add/', views.add_purchase, name='add_purchase'),
-    path('fund/<int:fund_pk>/redemption/add/', views.add_redemption, name='add_redemption'),
+    path('', views.transaction_list, name='portal-transactions'),
+    path('add/commitment/', views.create_commitment, name='add-commitment'),
+    path('add/call/', views.create_capital_call, name='add-call'),
+    path('add/receipt/', views.create_receipt, name='add-receipt'),
+    path('add/investment/', views.create_investment, name='add-investment'),
+    path('add/redemption/', views.create_redemption, name='add-redemption'),
+    path('add/distribution/', views.create_distribution, name='add-distribution'),
 ]

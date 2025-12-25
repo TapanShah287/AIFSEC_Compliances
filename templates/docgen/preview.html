@@ -1,0 +1,75 @@
+{% extends 'base.html' %}
+
+{% block title %}Notice Preview{% endblock %}
+
+{% block content %}
+<div class="max-w-5xl mx-auto">
+    <div class="flex items-center justify-between mb-8 bg-white p-4 rounded-2xl border border-slate-200 shadow-sm">
+        <div class="flex items-center gap-4">
+            <a href="javascript:history.back()" class="p-2 hover:bg-slate-100 rounded-full transition-colors">
+                <i data-lucide="arrow-left" class="w-5 h-5 text-slate-500"></i>
+            </a>
+            <h1 class="text-lg font-bold text-slate-800">Preview: Capital Call Notice</h1>
+        </div>
+        <div class="flex gap-3">
+            <button class="px-4 py-2 border border-slate-200 rounded-xl text-sm font-medium hover:bg-slate-50 transition-all flex items-center gap-2">
+                <i data-lucide="settings-2" class="w-4 h-4"></i> Edit Template
+            </button>
+            <button class="px-6 py-2 bg-indigo-600 text-white rounded-xl text-sm font-bold shadow-lg shadow-indigo-200 hover:bg-indigo-700 transition-all flex items-center gap-2">
+                <i data-lucide="send" class="w-4 h-4"></i> Dispatch to 15 Investors
+            </button>
+        </div>
+    </div>
+
+    <div class="bg-slate-200 p-12 rounded-2xl flex justify-center min-h-[800px]">
+        <div class="bg-white w-full max-w-[800px] shadow-2xl p-16 flex flex-col">
+            <div class="flex justify-between items-start border-b-2 border-slate-900 pb-8 mb-12">
+                <div>
+                    <h2 class="text-xl font-black uppercase tracking-tighter">{{ manager_entity.name|default:"AIF MANAGER PVT LTD" }}</h2>
+                    <p class="text-[10px] text-slate-500 mt-1 max-w-[200px]">Regd Off: Unit 402, Signature Towers, GIFT City, Gandhinagar - 382355</p>
+                </div>
+                <div class="text-right">
+                    <p class="text-xs font-bold">DRAWDOWN NOTICE</p>
+                    <p class="text-[10px] text-slate-500 mt-1">Ref: AIF-I/CALL-04/2024</p>
+                </div>
+            </div>
+
+            <div class="space-y-6 text-sm text-slate-800 leading-relaxed">
+                <p>Date: <span class="border-b border-dotted border-slate-400">January 25, 2025</span></p>
+                
+                <p>To,<br><strong>Mr. Rahul Sharma</strong><br>A-402, Sky Residency, Mumbai.</p>
+
+                <p class="pt-4 font-bold">Sub: Call Notice for your commitment in {{ fund.name|default:"Growth Fund I" }}</p>
+
+                <p>In accordance with the Contribution Agreement dated 12-Oct-2023, we hereby issue this call for capital to meet investment requirements in upcoming portfolio companies.</p>
+
+                <div class="bg-slate-50 border border-slate-200 p-6 rounded-lg my-8">
+                    <div class="grid grid-cols-2 gap-y-4">
+                        <span class="text-slate-500">Total Commitment:</span>
+                        <span class="text-right font-bold">₹ 5,00,00,000</span>
+                        
+                        <span class="text-slate-500">Current Call (5%):</span>
+                        <span class="text-right font-bold text-indigo-700 italic">₹ 25,00,000</span>
+                        
+                        <div class="col-span-2 border-t border-slate-200 my-2"></div>
+                        
+                        <span class="text-slate-500">Due Date:</span>
+                        <span class="text-right font-bold text-red-600">February 05, 2025</span>
+                    </div>
+                </div>
+
+                <p>Kindly remit the funds to the following Escrow Account:</p>
+                <div class="text-[11px] bg-slate-100 p-4 rounded border-l-4 border-slate-800">
+                    <p>Bank: HDFC BANK LTD (GIFT CITY BRANCH)</p>
+                    <p>A/c Name: {{ fund.name }} - Contribution A/c</p>
+                    <p>IFSC: HDFC0009921</p>
+                </div>
+
+                <p class="pt-12">For, {{ manager_entity.name }}</p>
+                <p class="mt-8 font-bold italic text-slate-400 underline decoration-slate-300 decoration-wavy">Signature</p>
+                <p class="font-bold">Principal Officer</p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
