@@ -42,34 +42,53 @@
                 {% endif %}
             </div>
 
-            <div class="bg-white shadow rounded-lg p-6 border border-slate-200">
-                <h2 class="text-xl font-semibold mb-4 text-slate-700">Update Task Status</h2>
-                
-                <form method="post" class="space-y-4">
-                    {% csrf_token %}
-                    <input type="hidden" name="update_task" value="true"> <div class="grid grid-cols-2 gap-4">
-                        <div>
-                            <label class="block text-sm font-medium text-slate-500">Status</label>
-                            {{ task_form.status }}
-                            {% if task_form.status.errors %}<p class="text-red-500 text-xs">{{ task_form.status.errors }}</p>{% endif %}
-                        </div>
-                        <div>
-                            <label class="block text-sm font-medium text-slate-500">Due Date</label>
-                            {{ task_form.due_date }}
-                            {% if task_form.due_date.errors %}<p class="text-red-500 text-xs">{{ task_form.due_date.errors }}</p>{% endif %}
-                        </div>
-                        <div class="col-span-2">
-                            <label class="block text-sm font-medium text-slate-500">Assigned To</label>
-                            {{ task_form.assigned_to }}
-                        </div>
+        <div class="bg-white shadow rounded-lg p-6 border border-slate-200">
+            <h2 class="text-xl font-semibold mb-4 text-slate-700">Update Task Status</h2>
+            {% if task_form.errors %}
+                <div class="p-4 mb-4 text-sm text-red-800 rounded-lg bg-red-50 border border-red-200">
+                    <span class="font-bold">Validation Errors:</span>
+                    <ul class="list-disc ml-4">
+                        {% for field, errors in task_form.errors.items %}
+                            <li>{{ field }}: {{ errors|striptags }}</li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            {% endif %}            
+            <form method="post" class="space-y-4">
+                {% csrf_token %}
+                <input type="hidden" name="update_task" value="true"> 
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-slate-500">Status</label>
+                        {{ task_form.status }}
+                        {% if task_form.status.errors %}<p class="text-red-500 text-xs">{{ task_form.status.errors }}</p>{% endif %}
                     </div>
-                    
-                    <button class="px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm hover:bg-indigo-700" type="submit">Save Quick Update</button>
-                    <a href="{% url 'compliances:task_edit' task.pk %}" class="text-sm text-indigo-600 hover:underline ml-3">Full Edit (Notes etc.)</a>
-                </form>
-            </div>
+                    <div>
+                        <label class="block text-sm font-medium text-slate-500">Due Date</label>
+                        {{ task_form.due_date }}
+                        {% if task_form.due_date.errors %}<p class="text-red-500 text-xs">{{ task_form.due_date.errors }}</p>{% endif %}
+                    </div>
+                    <div class="col-span-2">
+                        <label class="block text-sm font-medium text-slate-500">Assigned To</label>
+                        {{ task_form.assigned_to }}
+                    </div>
+                    <div class="col-span-2">
+                        <label class="block text-sm font-medium text-slate-500">Description / Notes</label>
+                        {{ task_form.description }}
+                    </div>
+                </div>
+                
+                <div class="pt-4">
+                    <button class="px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm font-bold hover:bg-indigo-700 shadow-md transition-all" type="submit">
+                        Save Changes
+                    </button>
+                    <a href="{% url 'compliances:task-list' %}" class="text-sm text-slate-500 hover:text-slate-800 ml-4 font-medium">
+                        Back to List
+                    </a>
+                </div>
+            </form>
         </div>
-
+        </div>
         <div class="lg:col-span-1 space-y-6">
 
             <div class="bg-white shadow rounded-lg p-6 border border-slate-200">

@@ -77,17 +77,25 @@ def create_task(request):
 
     return render(request, 'compliances/task_form.html', {'form': form})
 
+
+
+
 @login_required
 def task_list_view(request):
     """
     Renders the List View of compliance tasks.
     """
+    fund_id = request.GET.get('fund')
     today = timezone.now().date()
     tasks = ComplianceTask.objects.all()
+
+    if fund_id:
+        tasks = tasks.filter(fund_id=fund_id)
 
     # Calculate Summary Stats for the "Kanban-lite" header
     context = {
         'tasks': tasks,
+        'fund_id': fund_id,
         'overdue_count': tasks.filter(due_date__lt=today, status__in=['PENDING', 'IN_PROGRESS']).count(),
         'due_this_week': tasks.filter(due_date__range=[today, today + timedelta(days=7)]).count(),
         'upcoming_count': tasks.filter(due_date__gt=today + timedelta(days=7)).count(),
@@ -98,24 +106,25 @@ def task_list_view(request):
 
 @login_required
 def task_detail_view(request, pk):
-    """
-    Detailed view for a specific task.
-    Handles metadata updates and document evidence uploads.
-    """
     task = get_object_or_404(ComplianceTask, pk=pk)
     documents = task.documents.all().order_by('-uploaded_at')
     
-    task_form = ComplianceTaskUpdateForm(instance=task)
+    # Initialize forms
+    task_form = ComplianceTaskForm(instance=task)
     doc_form = ComplianceDocumentForm()
     
     if request.method == 'POST':
+        # HANDLE TASK METADATA UPDATE
         if 'update_task' in request.POST:
-            task_form = ComplianceTaskUpdateForm(request.POST, instance=task)
+            task_form = ComplianceTaskForm(request.POST, instance=task)
             if task_form.is_valid():
                 task_form.save()
-                messages.success(request, "Workflow status updated.")
-                return redirect('compliances:task_detail', pk=task.pk)
-            
+                messages.success(request, "Task updated successfully!")
+                return redirect('compliances:task-detail', pk=task.pk)
+            else:
+                messages.error(request, "Update failed. Please check the fields.")
+
+        # HANDLE DOCUMENT UPLOAD
         elif 'upload_doc' in request.POST:
             doc_form = ComplianceDocumentForm(request.POST, request.FILES)
             if doc_form.is_valid():
@@ -124,19 +133,27 @@ def task_detail_view(request, pk):
                 doc.uploaded_by = request.user
                 doc.save()
                 
+                # Check if user checked the 'Mark Complete' box in the form
                 if doc_form.cleaned_data.get('mark_complete'):
                     task.status = 'COMPLETED'
                     task.save()
                 
                 messages.success(request, "Evidence uploaded successfully.")
-                return redirect('compliances:task_detail', pk=task.pk)
-                    
+                return redirect('compliances:task-detail', pk=task.pk)
+
     return render(request, 'compliances/task_detail.html', {
         'task': task,
         'documents': documents,
         'task_form': task_form,
         'doc_form': doc_form,
     })
+
+@login_required
+def initialize_fund_roadmap(request, pk):
+    fund = get_object_or_404(Fund, pk=pk)
+    count = generate_standard_aif_tasks(fund)
+    messages.success(request, f"Roadmap initialized. {count} tasks added to calendar.")
+    return redirect('compliances:calendar')
 
 @login_required
 def upload_compliance_evidence(request, task_id):
@@ -222,19 +239,19 @@ def task_delete_view(request, pk):
 @login_required
 def calendar_view(request):
     """
-    Generates the grid logic for the Compliance Calendar.
+    Generates the grid logic for the Compliance Calendar with Year-Month boundary handling.
     """
     # 1. Determine Month/Year to display
     today = timezone.now().date()
     year = int(request.GET.get('year', today.year))
     month = int(request.GET.get('month', today.month))
+    fund_id = request.GET.get('fund')
 
     # 2. Setup Calendar Iterator
     cal = calendar.Calendar(firstweekday=6) # 6 = Sunday
     month_days = cal.monthdatescalendar(year, month)
     
     # 3. Fetch Tasks for this date range
-    # Get first and last date visible on the calendar grid
     start_date = month_days[0][0]
     end_date = month_days[-1][-1]
     
@@ -242,13 +259,15 @@ def calendar_view(request):
         due_date__range=[start_date, end_date]
     )
 
+    # Optional Fund Filtering
+    if fund_id:
+        tasks_in_range = tasks_in_range.filter(fund_id=fund_id)
+
     # 4. Build the Grid Data Structure
     calendar_data = []
     for week in month_days:
         for day in week:
-            # Find tasks for this specific day
             day_tasks = [t for t in tasks_in_range if t.due_date == day]
-            
             calendar_data.append({
                 'date': day,
                 'is_today': (day == today),
@@ -256,16 +275,52 @@ def calendar_view(request):
                 'tasks': day_tasks
             })
 
-    # 5. Calculate Nav Links
-    prev_date = date(year, month, 1) - timedelta(days=1)
-    next_date = date(year, month, 28) + timedelta(days=4) # Jump to next month safely
+    # 5. Calculate Nav Links (Fixed logic to handle Year transitions)
+    if month == 12:
+        next_month_val, next_year_val = 1, year + 1
+        prev_month_val, prev_year_val = 11, year
+    elif month == 1:
+        next_month_val, next_year_val = 2, year
+        prev_month_val, prev_year_val = 12, year - 1
+    else:
+        next_month_val, next_year_val = month + 1, year
+        prev_month_val, prev_year_val = month - 1, year
+
+    fund_param = f"&fund={fund_id}" if fund_id else ""
     
     context = {
         'calendar_days': calendar_data,
-        'current_month': date(year, month, 1),
-        'prev_month': f"{prev_date.year}&month={prev_date.month}",
-        'next_month': f"{next_date.year}&month={next_date.month}",
-        'current_tab': 'calendar'
+        'current_month_date': date(year, month, 1),
+        'prev_month_url': f"year={prev_year_val}&month={prev_month_val}{fund_param}",
+        'next_month_url': f"year={next_year_val}&month={next_month_val}{fund_param}",
+        'current_tab': 'calendar',
+        'fund_id': fund_id,
     }
     
     return render(request, 'compliances/calendar.html', context)
+
+@login_required
+def compliance_reports_view(request):
+    # Stats for the top cards
+    funds = Fund.objects.all()
+    total_tasks = ComplianceTask.objects.count()
+    completed_tasks = ComplianceTask.objects.filter(status='COMPLETED').count()
+    overdue_tasks = ComplianceTask.objects.filter(status='OVERDUE').count()
+    
+    # Group tasks by fund for the reporting table
+    reports_by_fund = []
+    for fund in funds:
+        reports_by_fund.append({
+            'fund': fund,
+            'pending': fund.compliancetask_set.filter(status__in=['PENDING', 'OVERDUE']).count(),
+            'completed': fund.compliancetask_set.filter(status='COMPLETED').count(),
+            'recent_tasks': fund.compliancetask_set.all().order_by('-due_date')[:5]
+        })
+
+    context = {
+        'reports_by_fund': reports_by_fund,
+        'total_tasks': total_tasks,
+        'completion_rate': (completed_tasks / total_tasks * 100) if total_tasks > 0 else 0,
+        'overdue_count': overdue_tasks,
+    }
+    return render(request, 'compliances/reports.html', context)

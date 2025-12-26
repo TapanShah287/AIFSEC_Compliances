@@ -1,5 +1,6 @@
 from datetime import timedelta, date
 from .models import ComplianceTask
+from django.utils import timezone
 
 DEFAULT_RULES = {
     'MCA': 30,
@@ -8,6 +9,79 @@ DEFAULT_RULES = {
     'TAX': 15,
     'OTHER': 10
 }
+
+def generate_standard_aif_tasks(fund):
+    """
+    Automates the creation of standard regulatory tasks based 
+    on the Fund's jurisdiction and inception date.
+    """
+    tasks_to_create = []
+    start_date = fund.inception_date or timezone.now().date()
+    current_year = start_date.year
+
+# --- 1. REGULATORY FILINGS (CTR/AQR) ---    
+    # Define Standard Recurring Deadlines
+    if fund.jurisdiction == 'DOMESTIC':
+        # SEBI Quarterly CTR (Due 15 days after quarter end)
+        quarter_ends = [date(2026, 3, 31), date(2026, 6, 30), date(2026, 9, 30), date(2026, 12, 31)]
+        for q_end in quarter_ends:
+            if q_end > start_date:
+                tasks_to_create.append(ComplianceTask(
+                    fund=fund,
+                    title=f"Quarterly CTR Filing - {q_end.strftime('%b %Y')}",
+                    description="Mandatory SEBI quarterly report submission via SEBI Intermediary Portal.",
+                    due_date=q_end + timedelta(days=15),
+                    jurisdiction='DOMESTIC',
+                    priority='HIGH',
+                    status='PENDING'
+                ))
+    
+    elif fund.jurisdiction == 'IFSC':
+        # IFSCA specific filings
+        tasks_to_create.append(ComplianceTask(
+            fund=fund,
+            title="IFSCA Annual Compliance Report",
+            description="Submit annual compliance certificate to IFSCA authorities.",
+            due_date=date(2026, 4, 30),
+            jurisdiction='IFSC',
+            priority='HIGH'
+        ))
+
+# --- 2. STEWARDSHIP CODE TASKS (Annual) ---
+    stewardship_tasks = [
+        {
+            'title': f"Annual Stewardship Disclosure - FY {current_year}",
+            'desc': "Public disclosure of voting nature and stewardship responsibilities on the fund website.",
+            'due': date(current_year, 6, 30), # Usually 3 months post-FY
+            'priority': 'MEDIUM'
+        },
+        {
+            'title': "Annual Voting Policy Review",
+            'desc': "Internal review and approval of the fund's voting policy by the Investment Committee.",
+            'due': date(current_year, 4, 15),
+            'priority': 'LOW'
+        }
+    ]
+
+    for item in stewardship_tasks:
+        if item['due'] > start_date:
+            tasks_to_create.append(ComplianceTask(
+                fund=fund,
+                title=item['title'],
+                description=item['desc'],
+                due_date=item['due'],
+                jurisdiction=fund.jurisdiction,
+                priority=item['priority'],
+                topic='STEWARDSHIP', # Ensure 'STEWARDSHIP' is a choice in your Model
+                status='PENDING'
+            ))
+
+
+    # Bulk create for database efficiency
+    if tasks_to_create:
+        ComplianceTask.objects.bulk_create(tasks_to_create)
+        return len(tasks_to_create)
+    return 0
 
 def _get_due_date(base_date, days):
     if not base_date:

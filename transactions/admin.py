@@ -13,13 +13,14 @@ class PurchaseAdmin(admin.ModelAdmin):
 
 @admin.register(DrawdownReceipt)
 class ReceiptAdmin(admin.ModelAdmin):
-    # Using methods to pull fund/investor from the linked CapitalCall
-    list_display = ('transaction_ref', 'get_fund', 'get_investor', 'amount_received', 'received_date')
-
-    def get_fund(self, obj):
-        return obj.capital_call.fund
-    get_fund.short_description = 'Fund'
-
-    def get_investor(self, obj):
-        return obj.capital_call.investor
-    get_investor.short_description = 'Investor'
+    # Change 'transaction_ref' -> 'transaction_reference'
+    # Change 'received_date' -> 'date_received'
+    list_display = (
+        'transaction_reference', 
+        'investor', 
+        'fund', 
+        'amount_received', 
+        'date_received'
+    )
+    list_filter = ('fund', 'date_received')
+    search_fields = ('transaction_reference', 'investor__name')

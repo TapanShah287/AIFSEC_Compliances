@@ -1,5 +1,6 @@
 from django import forms
 from .models import ComplianceTask, ComplianceDocument
+from funds.models import Fund
 
 # Common styling
 STYLE = {'class': 'w-full p-2 border border-gray-300 rounded'}
@@ -7,10 +8,15 @@ STYLE = {'class': 'w-full p-2 border border-gray-300 rounded'}
 class ComplianceTaskForm(forms.ModelForm):
     class Meta:
         model = ComplianceTask
-        # FIXED: Changed 'topic' -> 'title' and 'notes' -> 'description'
-        fields = ['title', 'jurisdiction', 'due_date', 'priority', 'description', 'assigned_to']
+        fields = ['fund', 'title', 'topic', 'jurisdiction', 'due_date', 'priority', 'status','description', 'assigned_to']
         
         widgets = {
+            'fund': forms.Select(attrs={
+                'class': 'w-full px-4 py-2 bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500/20 outline-none transition-all'
+            }),
+            'topic': forms.Select(attrs={
+                'class': 'w-full px-4 py-2 bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500/20 outline-none transition-all'
+            }),
             'title': forms.TextInput(attrs={
                 'class': 'w-full px-4 py-2 bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500/20 outline-none transition-all',
                 'placeholder': 'e.g. Quarterly TDS Filing'
@@ -33,7 +39,30 @@ class ComplianceTaskForm(forms.ModelForm):
             'assigned_to': forms.Select(attrs={
                 'class': 'w-full px-4 py-2 bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500/20 outline-none transition-all'
             }),
+            'status': forms.Select(attrs={
+                'class': 'w-full px-4 py-2 bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500/20 outline-none transition-all'
+            }),
         }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        
+        # If we are editing an existing task
+        if self.instance and self.instance.pk:
+            # Topic must be here because it is missing from the Detail View HTML
+            optional_fields = ['fund', 'title', 'jurisdiction', 'topic', 'priority']
+            
+            for field in optional_fields:
+                if field in self.fields:
+                    self.fields[field].required = False
+            
+            if 'fund' in self.fields:
+                self.fields['fund'].disabled = True
+
+        # Mapping for the 'Create' view logic
+        self.fields['fund'].queryset = Fund.objects.all().order_by('name')
+        fund_map = {f.id: f.jurisdiction for f in self.fields['fund'].queryset}
+        self.fields['fund'].widget.attrs['data-jurisdiction-map'] = fund_map
 
 
 class ComplianceDocumentForm(forms.ModelForm):

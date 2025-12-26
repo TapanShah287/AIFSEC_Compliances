@@ -16,6 +16,7 @@ from rest_framework.permissions import IsAuthenticated
 from .models import Fund, StewardshipEngagement, NavSnapshot
 from manager_entities.models import ManagerEntity
 from .forms import FundForm, StewardshipEngagementForm, NavSnapshotForm
+from transactions.forms import DrawdownReceiptForm
 from .serializers import FundSerializer
 
 # FIXED IMPORT: Now pointing to analytics.py to avoid conflict with services/ folder
@@ -118,7 +119,15 @@ def fund_add(request):
             fund.manager_entity = manager_entity
             fund.slug = slugify(fund.name)
             fund.save()
-            # SUCCESS WORKFLOW: Redirect to the success celebration page
+            
+            # NEW: Trigger the automation
+            try:
+                from compliances.services import generate_standard_aif_tasks
+                task_count = generate_standard_aif_tasks(fund)
+                messages.info(request, f"Generated {task_count} regulatory tasks for the new fund.")
+            except Exception as e:
+                print(f"Task generation failed: {e}")
+
             return render(request, "funds/fund_success.html", {"fund": fund})
     else:
         form = FundForm()
@@ -131,55 +140,76 @@ def fund_add(request):
 
 @login_required
 def fund_detail(request, pk):
+    """
+    Comprehensive view for Fund Overview.
+    Calculates Cap Table, Analytics Summary, and Upcoming Compliance.
+    """
     fund = get_object_or_404(Fund, pk=pk)
 
-    from transactions.forms import CapitalCallForm
-
-# 1. Initialize variables immediately to avoid UnboundLocalError
-    upcoming_tasks = []
-    from django.utils import timezone
+    # 1. CAP TABLE CALCULATIONS
+    # Fetch all holdings for this fund, optimized with select_related for investor names
+    cap_table = fund.cap_table.all().select_related('investor').order_by('-total_units')
     
-    # 2. Safely fetch compliance tasks
+    # Calculate the total units across the whole fund for ownership % logic
+    total_fund_units = cap_table.aggregate(total=Sum('total_units'))['total'] or Decimal('0.0000')
+
+    # 2. ANALYTICS SERVICE
+    # Initialize your analytics service to get called capital, DPI, etc.
+    analytics = FundAnalyticsService(fund)
+    summary = analytics.get_fund_summary()
+
+    # 3. COMPLIANCE TASKS LOGIC
+    upcoming_tasks = []
     try:
+        # We import inside the function or locally to prevent circular dependencies
         from compliances.models import ComplianceTask
         today = timezone.now().date()
         
-        # Filter tasks specifically for this fund that aren't completed
+        # Filter for PENDING/IN_PROGRESS tasks linked to this specific fund
         upcoming_tasks = ComplianceTask.objects.filter(
             fund=fund,
             status__in=['PENDING', 'IN_PROGRESS']
         ).order_by('due_date')[:3]
 
-        # Attach helper attributes for the template logic
+        # Calculate "Days Remaining" or "Days Overdue" for the UI sidebar
         for task in upcoming_tasks:
             diff = (task.due_date - today).days
             task.days_left = diff
-            # Using the absolute value logic we discussed
+            # If diff is -2, it means 2 days overdue
             task.days_overdue = abs(diff) if diff < 0 else 0
             
     except (ImportError, Exception) as e:
-        # If the app isn't ready or table doesn't exist, upcoming_tasks stays []
+        # Fallback if the compliance app isn't migrated or available
         print(f"Compliance fetch error: {e}")
         upcoming_tasks = []
 
-    # Initialize the renamed service
-    analytics = FundAnalyticsService(fund)
-    
-    # 1. Fetch Analytics
-    summary = analytics.get_fund_summary()
-    
-    # 2. Compliance Alerts Logic (Mock for now)
+    # 4. COMPLIANCE ALERTS (Business Logic)
     alerts = []
+    # Example: IFSC Funds MUST have stewardship logs per 2024/25 regulations
     if fund.jurisdiction == 'IFSC' and not fund.stewardship_logs.exists():
-        alerts.append({'level': 'warning', 'message': 'IFSCA Mandatory: No Stewardship engagements logged yet.'})
+        alerts.append({
+            'level': 'warning', 
+            'message': 'IFSCA Compliance: No Stewardship engagements logged for this fund.'
+        })
+    
+    # Example: Low Commitment Alert
+    if summary.get('commitment_percentage', 0) < 10:
+        alerts.append({
+            'level': 'info',
+            'message': 'Fundraising: Commitment levels are currently below 10% of target corpus.'
+        })
 
-
-    return render(request, "funds/fund_detail.html", {
+    # 5. CONTEXT PREPARATION
+    context = {
         "fund": fund,
+        "cap_table": cap_table,
+        "total_fund_units": total_fund_units,
         "summary": summary,
         "compliance_alerts": alerts,
         "upcoming_tasks": upcoming_tasks
-    })
+    }
+
+    return render(request, "funds/fund_detail.html", context)
 
 # =========================================================
 #  PORTFOLIO & REPORTING
@@ -294,17 +324,25 @@ def create_capital_call(request, pk):
 @login_required
 def add_receipt(request, pk):
     fund = get_object_or_404(Fund, pk=pk)
-    if request.method == "POST":
-        form = DrawdownReceiptForm(request.POST, fund_context=fund)
+    
+    if request.method == 'POST':
+        # Pass 'fund' as the first positional argument
+        form = DrawdownReceiptForm(fund, request.POST) 
         if form.is_valid():
-            obj = form.save(commit=False)
-            obj.fund = fund
-            obj.save()
-            messages.success(request, "Receipt recorded.")
-            return redirect('funds:fund_detail', pk=fund.pk)
+            receipt = form.save(commit=False)
+            receipt.fund = fund
+            receipt.save()
+            messages.success(request, f"Units issued to {receipt.investor.name}")
+            return redirect('funds:fund-detail', pk=fund.pk)
     else:
-        form = DrawdownReceiptForm(fund_context=fund)
-    return render(request, "transactions/add_receipt.html", {"fund": fund, "form": form})
+        # Pass 'fund' as the first positional argument here too
+        # Change from (fund=fund) to just (fund)
+        form = DrawdownReceiptForm(fund) 
+    
+    return render(request, 'transactions/add_receipt.html', {
+        'form': form, 
+        'fund': fund
+    })
 
 @login_required
 def add_distribution(request, pk):

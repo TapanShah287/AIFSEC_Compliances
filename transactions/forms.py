@@ -1,5 +1,7 @@
 from django import forms
 from .models import CapitalCall, DrawdownReceipt, PurchaseTransaction, RedemptionTransaction, Distribution, InvestorCommitment
+from funds.models import Fund
+from investors.models import Investor
 
 INPUT_STYLE = 'w-full px-4 py-2 bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500/20 outline-none transition-all'
 
@@ -31,18 +33,45 @@ class CapitalCallForm(forms.ModelForm):
 class DrawdownReceiptForm(forms.ModelForm):
     class Meta:
         model = DrawdownReceipt
-        fields = ['capital_call', 'received_date', 'amount_received', 'payment_mode', 'transaction_ref']
+        fields = ['investor', 'capital_call', 'amount_received', 'date_received', 'transaction_reference', 'remarks']
+        
         widgets = {
-            'capital_call': forms.Select(attrs={'class': INPUT_STYLE}),
-            'received_date': forms.DateInput(attrs={'class': INPUT_STYLE, 'type': 'date'}),
-            'amount_received': forms.NumberInput(attrs={'class': INPUT_STYLE, 'step': '0.01'}),
-            'payment_mode': forms.Select(attrs={'class': INPUT_STYLE}),
-            'transaction_ref': forms.TextInput(attrs={'class': INPUT_STYLE}),
+            'investor': forms.Select(attrs={
+                'class': 'w-full px-4 py-2 bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500/20 outline-none transition-all'
+            }),
+            'capital_call': forms.Select(attrs={
+                'class': 'w-full px-4 py-2 bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500/20 outline-none transition-all'
+            }),
+            'amount_received': forms.NumberInput(attrs={
+                'class': 'w-full px-4 py-2 bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500/20 outline-none transition-all',
+                'placeholder': '0.00'
+            }),
+            'date_received': forms.DateInput(attrs={
+                'type': 'date', 
+                'class': 'w-full px-4 py-2 bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500/20 outline-none transition-all'
+            }),
+            'transaction_reference': forms.TextInput(attrs={
+                'class': 'w-full px-4 py-2 bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500/20 outline-none transition-all',
+                'placeholder': 'UTR / Ref Number'
+            }),
+            'remarks': forms.Textarea(attrs={
+                'rows': 2,
+                'class': 'w-full px-4 py-2 bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500/20 outline-none transition-all'
+            }),
         }
-    
-    def __init__(self, *args, **kwargs):
+
+    def __init__(self, fund, *args, **kwargs):
+        """
+        Filter the drop-downs so we only see Investors and Calls 
+        related to THIS specific Fund.
+        """
         super().__init__(*args, **kwargs)
-        self.fields['capital_call'].queryset = CapitalCall.objects.filter(is_paid=False)
+        if fund:
+            # Assuming CapitalCall has a 'fund' field
+            self.fields['capital_call'].queryset = CapitalCall.objects.filter(fund=fund)
+            # Assuming Investor is linked to Fund via ManyToMany or similar
+            # If you don't have a direct link yet, remove the next line:
+            # self.fields['investor'].queryset = fund.investors.all()
 
 class PurchaseTransactionForm(forms.ModelForm):
     class Meta:

@@ -1,123 +1,153 @@
 {% extends 'base.html' %}
 {% load humanize %}
 
-{% block title %}Executive Overview{% endblock %}
+{% block title %}Executive Overview | AIF Analytics{% endblock %}
 
 {% block content %}
-<div class="mb-8">
-    <h1 class="text-2xl font-bold text-slate-900">Good Morning, Team.</h1>
-    <p class="text-slate-500 text-sm">Here is your daily compliance and operations snapshot.</p>
+<div class="mb-8 flex flex-col md:flex-row md:items-center justify-between gap-4">
+    <div>
+        <h1 class="text-2xl font-black text-slate-900 tracking-tight">Executive Overview</h1>
+        <p class="text-slate-500 text-sm">Centralized management for all {{ fund_count }} AIF schemes and investor compliance.</p>
+    </div>
+    <div class="flex items-center gap-2 px-4 py-2 bg-white border border-slate-200 rounded-xl shadow-sm">
+        <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+        <span class="text-xs font-bold text-slate-600 uppercase tracking-wider">Portal Active</span>
+    </div>
 </div>
 
 <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-    <div class="bg-gradient-to-br from-indigo-600 to-indigo-700 rounded-2xl p-6 text-white shadow-lg shadow-indigo-200">
-        <div class="flex justify-between items-start">
-            <div>
-                <p class="text-indigo-200 text-xs font-bold uppercase tracking-wider">Total AUM</p>
-                <h3 class="text-2xl font-bold mt-1">₹ 245.8 Cr</h3>
-            </div>
-            <div class="p-2 bg-white/10 rounded-lg">
-                <i data-lucide="bar-chart-2" class="w-5 h-5 text-indigo-100"></i>
+    <div class="bg-gradient-to-br from-indigo-600 to-violet-700 rounded-3xl p-6 text-white shadow-xl shadow-indigo-200 relative overflow-hidden group">
+        <div class="relative z-10">
+            <p class="text-indigo-100 text-[10px] font-black uppercase tracking-[0.2em] mb-1">Total Drawdowns</p>
+            <h3 class="text-3xl font-bold tracking-tighter">₹ {{ stats.total_drawdowns|default:"0"|intcomma }}</h3>
+            <div class="mt-4 flex items-center gap-2 text-[10px]">
+                <span class="bg-white/20 px-2 py-1 rounded-lg font-bold">{{ suffix|default:"Cr" }}</span>
+                <span class="opacity-70">Called from Investors</span>
             </div>
         </div>
-        <div class="mt-4 flex items-center gap-2 text-xs text-indigo-100">
-            <span class="bg-white/20 px-1.5 py-0.5 rounded text-white font-medium">+12%</span>
-            <span>since last quarter</span>
-        </div>
+        <i data-lucide="wallet" class="absolute -right-4 -bottom-4 w-24 h-24 text-white/10 group-hover:scale-110 transition-transform duration-500"></i>
     </div>
 
-    <div class="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm">
-         <div class="flex justify-between items-start">
-            <div>
-                <p class="text-slate-400 text-xs font-bold uppercase tracking-wider">Active Funds</p>
-                <h3 class="text-2xl font-bold text-slate-900 mt-1">04</h3>
-            </div>
-            <div class="p-2 bg-slate-50 rounded-lg">
+    <div class="bg-white rounded-3xl p-6 border border-slate-200 shadow-sm">
+        <div class="flex justify-between items-start mb-4">
+            <div class="p-2.5 bg-slate-50 rounded-xl">
                 <i data-lucide="layers" class="w-5 h-5 text-slate-400"></i>
             </div>
+            <span class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Fund Count</span>
         </div>
-        <p class="text-xs text-slate-500 mt-4">2 Domestic • 2 GIFT City</p>
+        <h3 class="text-3xl font-bold text-slate-900 tracking-tighter">{{ fund_count|default:"0" }}</h3>
+        <p class="text-[10px] text-slate-400 mt-5 font-medium">Domestic & IFSC Schemes</p>
     </div>
 
-    <div class="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm border-l-4 border-l-amber-400">
-         <div class="flex justify-between items-start">
-            <div>
-                <p class="text-slate-400 text-xs font-bold uppercase tracking-wider">Pending KYC</p>
-                <h3 class="text-2xl font-bold text-slate-900 mt-1">12</h3>
-            </div>
-            <div class="p-2 bg-amber-50 rounded-lg">
+    <div class="bg-white rounded-3xl p-6 border border-slate-200 shadow-sm border-l-4 border-l-amber-400 group">
+        <div class="flex justify-between items-start mb-4">
+            <div class="p-2.5 bg-amber-50 rounded-xl">
                 <i data-lucide="user-check" class="w-5 h-5 text-amber-500"></i>
             </div>
+            <span class="text-[10px] font-bold text-amber-600 uppercase tracking-widest">Total LPs</span>
         </div>
-        <a href="{% url 'investors:portal-list' %}" class="text-xs font-semibold text-amber-600 mt-4 inline-block hover:underline">Review Applicants &rarr;</a>
+        <h3 class="text-3xl font-bold text-slate-900 tracking-tighter">{{ investor_count|default:"0" }}</h3>
+        <a href="{% url 'investors:portal-list' %}" class="mt-4 text-[10px] font-black text-amber-600 uppercase flex items-center gap-1 group-hover:gap-2 transition-all">
+            Review Registry <i data-lucide="chevron-right" class="w-3 h-3"></i>
+        </a>
     </div>
 
-    <div class="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm border-l-4 border-l-red-500">
-         <div class="flex justify-between items-start">
-            <div>
-                <p class="text-slate-400 text-xs font-bold uppercase tracking-wider">Filings Due</p>
-                <h3 class="text-2xl font-bold text-slate-900 mt-1">02</h3>
+    <div class="bg-white rounded-3xl p-6 border border-slate-200 shadow-sm border-l-4 border-l-emerald-500">
+        <div class="flex justify-between items-start mb-4">
+            <div class="p-2.5 bg-emerald-50 rounded-xl">
+                <i data-lucide="rocket" class="w-5 h-5 text-emerald-500"></i>
             </div>
-            <div class="p-2 bg-red-50 rounded-lg">
-                <i data-lucide="alert-octagon" class="w-5 h-5 text-red-500"></i>
-            </div>
+            <span class="text-[10px] font-bold text-emerald-600 uppercase tracking-widest">Deployments</span>
         </div>
-        <p class="text-xs text-red-500 font-medium mt-4">SEBI Quarterly Report due in 3 days.</p>
+        <h3 class="text-3xl font-bold text-slate-900 tracking-tighter">₹ {{ stats.total_investments|default:"0"|intcomma }}</h3>
+        <p class="mt-4 text-[10px] text-emerald-600 font-bold uppercase leading-tight">
+            Total Capital Deployed ({{ suffix|default:"Cr" }})
+        </p>
     </div>
 </div>
 
 <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
-    
-    <div class="lg:col-span-2 space-y-6">
-        <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-6">
-            <h3 class="font-bold text-slate-900 mb-6 flex items-center gap-2">
-                <i data-lucide="activity" class="w-4 h-4 text-indigo-500"></i> Recent Activity
-            </h3>
+    <div class="lg:col-span-2">
+        <div class="bg-white rounded-3xl border border-slate-200 shadow-sm p-8">
+            <div class="flex items-center justify-between mb-8">
+                <h3 class="font-bold text-slate-900 flex items-center gap-2">
+                    <i data-lucide="activity" class="w-4 h-4 text-indigo-500"></i> Financial Activity
+                </h3>
+            </div>
             
-            <div class="relative border-l border-slate-200 ml-3 space-y-8">
-                <div class="relative pl-8">
-                    <div class="absolute -left-1.5 top-1.5 w-3 h-3 bg-emerald-500 rounded-full ring-4 ring-white"></div>
+            <div class="space-y-8 relative before:absolute before:inset-0 before:ml-4 before:-translate-x-px before:h-full before:w-0.5 before:bg-slate-100">
+                {% for activity in recent_activities %}
+                <div class="relative pl-10 group">
+                    <div class="absolute left-0 top-1 w-8 h-8 bg-slate-50 rounded-full border-4 border-white flex items-center justify-center -translate-x-1/2 group-hover:scale-110 transition-transform">
+                        <i data-lucide="banknote" class="w-3 h-3 text-slate-400"></i>
+                    </div>
                     <div>
-                        <p class="text-sm font-semibold text-slate-800">Funds Received: ₹ 2.5 Cr</p>
-                        <p class="text-xs text-slate-500 mt-0.5">Wire transfer from <span class="font-medium text-slate-700">Greenwood Family Office</span> cleared.</p>
-                        <span class="text-[10px] text-slate-400 mt-1 block">2 hours ago</span>
+                        <div class="flex justify-between items-center mb-1">
+                            <p class="text-sm font-bold text-slate-800">Drawdown Received: ₹ {{ activity.amount_received|intcomma }}</p>
+                            <span class="text-[10px] font-medium text-slate-400">{{ activity.date_received|naturalday }}</span>
+                        </div>
+                        <p class="text-xs text-slate-500 leading-relaxed">Receipt from <span class="font-medium text-slate-900">{{ activity.investor.name }}</span> for {{ activity.fund.name }}.</p>
                     </div>
                 </div>
-
-                <div class="relative pl-8">
-                    <div class="absolute -left-1.5 top-1.5 w-3 h-3 bg-indigo-500 rounded-full ring-4 ring-white"></div>
+                {% empty %}
+                <div class="relative pl-10 group">
+                    <div class="absolute left-0 top-1 w-8 h-8 bg-slate-50 rounded-full border-4 border-white flex items-center justify-center -translate-x-1/2">
+                        <i data-lucide="info" class="w-3 h-3 text-slate-400"></i>
+                    </div>
                     <div>
-                        <p class="text-sm font-semibold text-slate-800">New Investor Onboarded</p>
-                        <p class="text-xs text-slate-500 mt-0.5">Rahul Mehta completed KYC verification.</p>
-                        <span class="text-[10px] text-slate-400 mt-1 block">5 hours ago</span>
+                        <p class="text-sm font-bold text-slate-800">System Ready</p>
+                        <p class="text-xs text-slate-500">Recording live financial transactions will populate this feed.</p>
                     </div>
                 </div>
-
-                <div class="relative pl-8">
-                    <div class="absolute -left-1.5 top-1.5 w-3 h-3 bg-slate-300 rounded-full ring-4 ring-white"></div>
-                    <div>
-                        <p class="text-sm font-semibold text-slate-800">Document Uploaded</p>
-                        <p class="text-xs text-slate-500 mt-0.5">Valuation Report (Dec 2024) uploaded for Fund II.</p>
-                        <span class="text-[10px] text-slate-400 mt-1 block">Yesterday</span>
-                    </div>
-                </div>
+                {% endfor %}
             </div>
         </div>
     </div>
 
     <div class="space-y-6">
-        <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-6">
-            <h3 class="font-bold text-slate-900 mb-4">Quick Actions</h3>
-            <div class="grid grid-cols-2 gap-3">
-                <a href="{% url 'investors:portal-add' %}" class="flex flex-col items-center justify-center p-4 bg-slate-50 hover:bg-indigo-50 rounded-xl border border-slate-100 hover:border-indigo-100 transition-all text-center group">
-                    <i data-lucide="user-plus" class="w-6 h-6 text-slate-400 group-hover:text-indigo-600 mb-2 transition-colors"></i>
-                    <span class="text-xs font-semibold text-slate-600 group-hover:text-indigo-700">Add Investor</span>
+        <div class="bg-white rounded-3xl border border-slate-200 shadow-sm p-6">
+            <h3 class="text-xs font-black text-slate-400 uppercase tracking-widest mb-6">Portal Toolkit</h3>
+            <div class="grid grid-cols-2 gap-4">
+                <a href="{% url 'investors:portal-add' %}" class="flex flex-col items-center justify-center p-5 bg-slate-50 hover:bg-indigo-600 group rounded-2xl transition-all text-center">
+                    <i data-lucide="user-plus" class="w-6 h-6 text-indigo-500 group-hover:text-white mb-3"></i>
+                    <span class="text-[10px] font-bold text-slate-600 group-hover:text-white uppercase tracking-tight">Onboard LP</span>
                 </a>
-                <button class="flex flex-col items-center justify-center p-4 bg-slate-50 hover:bg-indigo-50 rounded-xl border border-slate-100 hover:border-indigo-100 transition-all text-center group">
-                    <i data-lucide="file-plus" class="w-6 h-6 text-slate-400 group-hover:text-indigo-600 mb-2 transition-colors"></i>
-                    <span class="text-xs font-semibold text-slate-600 group-hover:text-indigo-700">New Task</span>
-                </button>
+                <a href="{% url 'funds:portal-funds' %}" class="flex flex-col items-center justify-center p-5 bg-slate-50 hover:bg-emerald-600 group rounded-2xl transition-all text-center">
+                    <i data-lucide="pie-chart" class="w-6 h-6 text-emerald-500 group-hover:text-white mb-3"></i>
+                    <span class="text-[10px] font-bold text-slate-600 group-hover:text-white uppercase tracking-tight">Manage Funds</span>
+                </a>
+                <div class="p-4 bg-slate-50 rounded-2xl text-center">
+                    <p class="text-[10px] font-bold text-slate-400 uppercase mb-1">Liquidity</p>
+                    <p class="text-sm font-bold text-slate-800">₹ {{ stats.cash_available|intcomma }}{{ suffix }}</p>
+                </div>
+                <div class="p-4 bg-slate-50 rounded-2xl text-center">
+                    <p class="text-[10px] font-bold text-slate-400 uppercase mb-1">Overdue</p>
+                    <p class="text-sm font-bold text-rose-600">{{ overdue_count|default:"0" }}</p>
+                </div>
             </div>
+        </div>
+
+        <div class="bg-slate-900 rounded-3xl p-6 shadow-xl relative overflow-hidden">
+            <div class="relative z-10">
+                <h3 class="text-xs font-bold text-slate-400 uppercase tracking-widest mb-4">Compliance Watch</h3>
+                <div class="space-y-4">
+                    {% for filing in upcoming_filings %}
+                    <div class="flex items-center gap-3">
+                        <div class="bg-white/10 px-2 py-1.5 rounded text-center min-w-[40px]">
+                            <p class="text-[8px] font-bold text-indigo-400 uppercase">{{ filing.due_date|date:"M" }}</p>
+                            <p class="text-xs font-black text-white">{{ filing.due_date|date:"d" }}</p>
+                        </div>
+                        <div>
+                            <p class="text-[11px] text-white font-medium">{{ filing.title }}</p>
+                            <p class="text-[9px] text-slate-500">{{ filing.fund.name }}</p>
+                        </div>
+                    </div>
+                    {% empty %}
+                    <p class="text-[11px] text-slate-500 italic">No immediate deadlines.</p>
+                    {% endfor %}
+                </div>
+            </div>
+            <i data-lucide="calendar" class="absolute -right-2 -top-2 w-20 h-20 text-white/5"></i>
         </div>
     </div>
 </div>

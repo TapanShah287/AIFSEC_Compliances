@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AIFCore | {% block title %}Dashboard{% endblock %}</title>
+    <title>AIFSEC Compliances| {% block title %}Dashboard{% endblock %}</title>
     
     <script src="https://cdn.tailwindcss.com"></script>
     
@@ -57,7 +57,7 @@
                 </div>
                 <div>
                     <h1 class="font-bold text-xl tracking-tight text-slate-900 leading-tight">AIF<span class="text-indigo-600">Core</span></h1>
-                    <p class="text-[10px] text-slate-400 font-semibold uppercase tracking-wider">GIFT City Edition</p>
+                    <p class="text-[10px] text-slate-400 font-semibold uppercase tracking-wider">By FinsoKart</p>
                 </div>
             </div>
             
@@ -110,10 +110,10 @@
                     <span>Document Hub</span>
                 </a>
 
-                <a href="#" 
-                   class="sidebar-link sidebar-link-inactive">
-                    <i data-lucide="file-spreadsheet" class="w-5 h-5 shrink-0"></i> 
-                    <span>Regulatory Reports</span>
+                <a href="{% url 'compliances:reports' %}" 
+                class="flex items-center gap-3 px-4 py-3 rounded-xl transition-all {% if request.resolver_match.view_name == 'compliances:reports' %}bg-indigo-600 text-white shadow-lg shadow-indigo-200{% else %}text-slate-500 hover:bg-slate-50 hover:text-slate-900{% endif %}">
+                    <i data-lucide="file-bar-chart" class="w-5 h-5"></i>
+                    <span class="text-sm font-bold">Regulatory Reports</span>
                 </a>
             </nav>
 
@@ -228,7 +228,7 @@
                 {% block content %}{% endblock %}
                 
                 <footer class="mt-16 pt-8 border-t border-slate-200 flex justify-between items-center text-xs text-slate-400">
-                    <p>&copy; 2025 AIFCore Compliance. GIFT City Edition.</p>
+                    <p>&copy; 2025 AIFSEC Compliance | By FinsoKart </p>
                     <p class="font-medium text-slate-500">v2.4.0 (Stable)</p>
                 </footer>
             </section>

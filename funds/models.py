@@ -162,3 +162,56 @@ class StewardshipEngagement(models.Model):
 
     def __str__(self):
         return f"{self.fund.name} -> {self.investee_company.name}: {self.topic}"
+
+class InvestorPosition(models.Model):
+    """
+    The Cap Table Entry. 
+    Represents an investor's total holding in this specific Fund.
+    """
+    fund = models.ForeignKey('funds.Fund', on_delete=models.CASCADE, related_name='cap_table')
+    investor = models.ForeignKey('investors.Investor', on_delete=models.CASCADE, related_name='holdings')
+    
+    # The essential numbers
+    total_units = models.DecimalField(max_digits=20, decimal_places=4, default=Decimal('0.0000'))
+    total_capital_contributed = models.DecimalField(max_digits=20, decimal_places=2, default=Decimal('0.00'))
+    
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        unique_together = ('fund', 'investor')
+        verbose_name = "Cap Table Entry"
+        verbose_name_plural = "Cap Table Entries"
+
+    @property
+    def ownership_percentage(self):
+        """Calculates the investor's stake relative to the total fund units."""
+        # Get total units for this fund
+        total = InvestorPosition.objects.filter(fund=self.fund).aggregate(
+            models.Sum('total_units')
+        )['total_units__sum']
+        
+        if total and total > 0:
+            return (self.total_units / total) * 100
+        return 0
+
+    def __str__(self):
+        return f"{self.fund.name} - {self.investor.name} ({self.total_units} Units)"
+
+class UnitIssuance(models.Model):
+    """
+    The Event.
+    Records exactly when and why units were added to the Cap Table.
+    """
+    # Link to the specific line item on the Cap Table
+    position = models.ForeignKey(InvestorPosition, on_delete=models.CASCADE, related_name='issuances')
+    
+    # Link to the Money (Lazy reference to avoid circular imports)
+    receipt = models.OneToOneField('transactions.DrawdownReceipt', on_delete=models.CASCADE, related_name='unit_issuance')
+    
+    # The Math
+    units_issued = models.DecimalField(max_digits=20, decimal_places=4)
+    nav_at_issuance = models.DecimalField(max_digits=12, decimal_places=4)
+    date_issued = models.DateField(auto_now_add=True)
+
+    def __str__(self):
+        return f"+{self.units_issued} Units (NAV: {self.nav_at_issuance})"

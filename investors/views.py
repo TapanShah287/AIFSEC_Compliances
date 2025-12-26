@@ -74,8 +74,16 @@ def portal_investor_list(request):
     Registry view with support for Denomination Scaling (INR/Cr/M).
     FIXED: Uses a wrapped data structure to ensure template compatibility.
     """
+    query = request.GET.get('q', '')
     investors_queryset = Investor.objects.all().order_by('name')
-    
+
+    if query:
+        investors = investors.filter(
+            Q(name__icontains=query) | 
+            Q(pan__icontains=query) | 
+            Q(email__icontains=query)
+        )
+
     # Scale Logic
     denom = request.GET.get('denom', 'raw')
     scale = Decimal('1')
@@ -87,26 +95,47 @@ def portal_investor_list(request):
         scale = Decimal('1000000')
         suffix = "M"
 
+# 1. Total Commitments (Aggregate across all investors)
+    total_committed_aggregate = InvestorCommitment.objects.aggregate(
+        total=Sum('amount_committed'))['total'] or 0
+
+    # 2. Total Contributed (Aggregate across all receipts)
+    total_contributed_aggregate = DrawdownReceipt.objects.aggregate(
+        total=Sum('amount_received'))['total'] or 0
+
+    # 3. Pending KYC Count
+    pending_kyc_count = Investor.objects.filter(kyc_status='PENDING').count()
+
+# --- INDIVIDUAL ROW LOGIC ---
+
     investors_data = []
-    for investor in investors_queryset:
-        # Calculate financial summary for the registry row
+    investors = investors_queryset.all()
+
+    for investor in investors:
+        # Commitment for this specific investor
         committed = InvestorCommitment.objects.filter(investor=investor).aggregate(
-            total=Sum('amount_committed'))['total'] or Decimal('0.00')
+            total=Sum('amount_committed'))['total'] or 0
         
+        # Contribution for this specific investor
         contributed = DrawdownReceipt.objects.filter(investor=investor).aggregate(
-            total=Sum('amount_received'))['total'] or Decimal('0.00')
+            total=Sum('amount_received'))['total'] or 0
+        
+        # Calculate Funded Percentage for the progress bar
+        funded_pct = (contributed / committed * 100) if committed > 0 else 0
 
         investors_data.append({
             'investor': investor, # Accessible in template as item.investor.name
             'total_committed': committed / scale,
             'uncalled_capital': (committed - contributed) / scale,
+            'funded_pct': round(funded_pct, 2),
             'kyc_status': investor.kyc_status,
         })
 
     return render(request, 'investors/investor_list.html', {
         'investors': investors_data,
-        'denom': denom,
-        'suffix': suffix
+        'total_committed_aggregate': total_committed_aggregate / scale,
+        'total_contributed_aggregate': total_contributed_aggregate / scale,
+        'pending_kyc_count': pending_kyc_count,
     })
 
 @login_required

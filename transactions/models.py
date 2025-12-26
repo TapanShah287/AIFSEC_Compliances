@@ -43,17 +43,23 @@ class CapitalCall(models.Model):
         return f"{self.reference} - {self.investor.name}"
 
 class DrawdownReceipt(models.Model):
-    PAYMENT_MODES = [('NEFT', 'NEFT'), ('RTGS', 'RTGS'), ('SWIFT', 'SWIFT'), ('CHEQUE', 'Cheque')]
+    # Links
+    fund = models.ForeignKey('funds.Fund', on_delete=models.CASCADE, related_name='receipts')
+    investor = models.ForeignKey('investors.Investor', on_delete=models.CASCADE, related_name='receipts')
+    capital_call = models.ForeignKey(CapitalCall, on_delete=models.SET_NULL, null=True, blank=True, related_name='receipts')
     
-    capital_call = models.ForeignKey(CapitalCall, on_delete=models.CASCADE, related_name='receipts')
-    received_date = models.DateField(default=timezone.now)
-    amount_received = models.DecimalField(max_digits=14, decimal_places=2)
-    payment_mode = models.CharField(max_length=10, choices=PAYMENT_MODES, default='NEFT')
-    transaction_ref = models.CharField(max_length=100, help_text="UTR/IMPS Ref")
+    # The Money Fields
+    amount_received = models.DecimalField(max_digits=20, decimal_places=2)
+    date_received = models.DateField()  # The form looks for 'date_received'
+    
+    # Meta Data (The fields that caused the error)
+    transaction_reference = models.CharField(max_length=100, blank=True, null=True, help_text="UTR or Bank Ref Number")
+    remarks = models.TextField(blank=True, null=True)
+    
     created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
-        return f"Rcpt {self.id} - {self.amount_received}"
+        return f"Received {self.amount_received} from {self.investor.name}"
 
 class InvestorUnitIssue(models.Model):
     """
