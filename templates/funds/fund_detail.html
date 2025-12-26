@@ -147,31 +147,35 @@
         </div>
     </div>
 
-    <div class="space-y-6">
-        <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
-            <h3 class="text-sm font-bold text-slate-800 uppercase tracking-wide mb-4 flex items-center gap-2">
-                <i data-lucide="shield-alert" class="w-4 h-4 text-amber-500"></i> Compliance Watch
-            </h3>
-            <div class="space-y-4">
-                <div class="flex items-start gap-3 pb-4 border-b border-slate-50">
-                    <div class="w-2 h-2 rounded-full bg-red-500 mt-1.5"></div>
-                    <div>
-                        <p class="text-sm font-medium text-slate-800">Quarterly CTR Filing</p>
-                        <p class="text-xs text-red-500 font-medium">Due in 2 days</p>
-                    </div>
-                </div>
-                <div class="flex items-start gap-3">
-                    <div class="w-2 h-2 rounded-full bg-emerald-500 mt-1.5"></div>
-                    <div>
-                        <p class="text-sm font-medium text-slate-800">SEBI PPM Audit</p>
-                        <p class="text-xs text-slate-400">Completed on Jan 10</p>
-                    </div>
-                </div>
-            </div>
-            <button class="w-full mt-6 py-2 text-xs font-semibold text-indigo-600 bg-indigo-50 rounded-lg hover:bg-indigo-100 transition-colors">
-                View Compliance Calendar
-            </button>
+<div class="space-y-6">
+    <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
+        <h3 class="text-sm font-bold text-slate-800 uppercase tracking-wide mb-4 flex items-center gap-2">
+            <i data-lucide="shield-alert" class="w-4 h-4 text-amber-500"></i> Compliance Watch
+        </h3>
+        <div class="space-y-4">
+{% for task in upcoming_tasks %}
+<div class="flex items-start gap-3 pb-4">
+    <div class="w-2 h-2 rounded-full mt-1.5 bg-{{ task.urgency_color }}-500"></div>
+    <div>
+        <p class="text-sm font-medium text-slate-800">{{ task.title }}</p>
+        {% if task.days_remaining < 0 %}
+            <p class="text-xs text-rose-600 font-bold">Overdue by {{ task.days_remaining|stringformat:"i"|cut:"-" }} days</p>
+        {% elif task.days_remaining == 0 %}
+            <p class="text-xs text-red-500 font-bold">Due Today</p>
+        {% else %}
+            <p class="text-xs text-slate-400">Due in {{ task.days_remaining }} days</p>
+        {% endif %}
+    </div>
+</div>
+{% endfor %}
         </div>
+
+        <a href="{% url 'compliances:calendar' %}?fund={{ fund.id }}" 
+           class="block w-full mt-6 py-2 text-center text-xs font-semibold text-indigo-600 bg-indigo-50 rounded-lg hover:bg-indigo-100 transition-colors">
+            View Compliance Calendar
+        </a>
+    </div>
+</div>
 
         <div class="bg-gradient-to-br from-slate-900 to-slate-800 p-6 rounded-2xl text-white shadow-lg">
             <h3 class="text-sm font-semibold opacity-80 mb-4">Investor Overview</h3>

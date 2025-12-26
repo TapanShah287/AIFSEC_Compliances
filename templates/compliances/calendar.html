@@ -10,9 +10,16 @@
         <p class="text-slate-500 text-sm mt-1">Track SEBI & IFSCA filing deadlines for {{ current_month|date:"F Y" }}.</p>
     </div>
     
-    <div class="flex bg-white p-1 rounded-xl border border-slate-200 shadow-sm">
-        <button class="px-4 py-2 text-sm font-medium text-slate-900 bg-slate-100 rounded-lg shadow-sm">Month View</button>
-        <button class="px-4 py-2 text-sm font-medium text-slate-500 hover:text-slate-900 hover:bg-slate-50 rounded-lg transition-colors">List View</button>
+    <div class="flex bg-white p-1 rounded-xl border border-slate-200 shadow-sm mb-6 w-fit">
+        <a href="{% url 'compliances:calendar' %}" 
+        class="px-4 py-2 text-sm font-medium {% if current_tab == 'calendar' %}text-slate-900 bg-slate-100 shadow-sm{% else %}text-slate-500 hover:bg-slate-50{% endif %} rounded-lg transition-all">
+            Month View
+        </a>
+
+        <a href="{% url 'compliances:task-list' %}" 
+        class="px-4 py-2 text-sm font-medium {% if current_tab == 'list' %}text-slate-900 bg-slate-100 shadow-sm{% else %}text-slate-500 hover:bg-slate-50{% endif %} rounded-lg transition-all">
+            List View
+        </a>
     </div>
 </div>
 

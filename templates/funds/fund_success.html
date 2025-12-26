@@ -1,0 +1,41 @@
+{% extends 'base.html' %}
+
+{% block title %}Fund Created Successfully{% endblock %}
+
+{% block content %}
+<div class="max-w-2xl mx-auto py-12 text-center">
+    <div class="mb-8 flex justify-center">
+        <div class="relative">
+            <div class="absolute inset-0 bg-emerald-400 rounded-full blur-2xl opacity-20 animate-pulse"></div>
+            <div class="w-24 h-24 bg-emerald-500 text-white rounded-3xl flex items-center justify-center shadow-2xl shadow-emerald-200 relative">
+                <i data-lucide="check-circle-2" class="w-12 h-12"></i>
+            </div>
+        </div>
+    </div>
+
+    <h1 class="text-3xl font-black text-slate-900 mb-2">Fund Launched!</h1>
+    <p class="text-slate-500 mb-10"><strong>{{ fund.name }}</strong> is now active in the system and ready for capital commitments.</p>
+
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-left">
+        <a href="{% url 'investors:portal-list' %}" class="p-6 bg-white border border-slate-200 rounded-2xl hover:border-indigo-500 hover:shadow-lg transition-all group">
+            <div class="w-10 h-10 bg-indigo-50 text-indigo-600 rounded-lg flex items-center justify-center mb-4 group-hover:bg-indigo-600 group-hover:text-white transition-all">
+                <i data-lucide="user-plus" class="w-5 h-5"></i>
+            </div>
+            <h3 class="font-bold text-slate-900">Onboard Investors</h3>
+            <p class="text-xs text-slate-500 mt-1">Start adding limited partners to this fund.</p>
+        </a>
+
+        <a href="{% url 'funds:fund_detail' fund.id %}" class="p-6 bg-white border border-slate-200 rounded-2xl hover:border-slate-900 hover:shadow-lg transition-all group">
+            <div class="w-10 h-10 bg-slate-100 text-slate-600 rounded-lg flex items-center justify-center mb-4 group-hover:bg-slate-900 group-hover:text-white transition-all">
+                <i data-lucide="layout-dashboard" class="w-5 h-5"></i>
+            </div>
+            <h3 class="font-bold text-slate-900">View Dashboard</h3>
+            <p class="text-xs text-slate-500 mt-1">Configure fund rules and compliance tasks.</p>
+        </a>
+    </div>
+
+    <div class="mt-12">
+        <a href="{% url 'funds:portal-funds' %}" class="text-sm font-medium text-slate-400 hover:text-indigo-600 transition-colors">Back to Fund Registry</a>
+    </div>
+</div>
+{% endblock %}

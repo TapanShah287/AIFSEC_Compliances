@@ -139,6 +139,26 @@ def task_detail_view(request, pk):
     })
 
 @login_required
+def upload_compliance_evidence(request, task_id):
+    task = get_object_or_404(ComplianceTask, id=task_id)
+    if request.method == 'POST' and request.FILES.get('evidence_file'):
+        ComplianceDocument.objects.create(
+            task=task,
+            title=request.POST.get('title', f"Evidence - {task.title}"),
+            file=request.FILES['evidence_file'],
+            uploaded_by=request.user,
+            remarks=request.POST.get('remarks', '')
+        )
+        # Auto-mark task as completed upon evidence upload
+        if 'complete_task' in request.POST:
+            task.status = 'COMPLETED'
+            task.completion_date = timezone.now().date()
+            task.save()
+            
+        messages.success(request, "Compliance evidence successfully archived.")
+    return redirect(request.META.get('HTTP_REFERER', 'compliances:dashboard'))
+
+@login_required
 def generate_from_purchase(request, pk):
     """Automated task generation from a Purchase Transaction."""
     from transactions.models import PurchaseTransaction

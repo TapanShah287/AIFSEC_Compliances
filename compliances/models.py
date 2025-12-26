@@ -48,6 +48,26 @@ class ComplianceTask(models.Model):
         return f"{self.title} ({self.due_date})"
 
     @property
+    def days_remaining(self):
+        """Returns the integer difference between today and the due date."""
+        today = timezone.now().date()
+        return (self.due_date - today).days
+
+    @property
+    def urgency_color(self):
+        """Returns a CSS color class based on urgency."""
+        days = self.days_remaining
+        if self.status == 'COMPLETED':
+            return 'emerald'
+        if days < 0:
+            return 'rose' # Overdue
+        if days < 3:
+            return 'red'  # Urgent
+        if days < 7:
+            return 'amber' # Warning
+        return 'emerald'   # Safe
+        
+    @property
     def is_overdue(self):
         return self.status != 'COMPLETED' and self.due_date < timezone.now().date()
 

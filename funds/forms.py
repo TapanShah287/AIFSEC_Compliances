@@ -9,24 +9,33 @@ INPUT_STYLE = 'w-full px-4 py-2 bg-white border border-slate-200 rounded-xl focu
 class FundForm(forms.ModelForm):
     class Meta:
         model = Fund
+        # Ensure these match your models.py attributes exactly
         fields = [
-            'name', 'jurisdiction', 'scheme_type', 'currency', 'parent_fund', 
-            'sebi_registration_number', 'category', 'corpus', 
-            'sponsor_commitment', 'date_of_inception', 'manager'
+            'name', 
+            'sebi_registration_number', 
+            'category', 
+            'date_of_inception', 
+            'corpus', 
+            'currency', 
+            'manager_entity',
+            'scheme_type',
+            'jurisdiction'
         ]
+        
+        # Adding widgets ensures they are styled as inputs/dates rather than plain text
         widgets = {
-            'name': forms.TextInput(attrs={'class': INPUT_STYLE, 'placeholder': 'Fund Name'}),
-            'jurisdiction': forms.Select(attrs={'class': INPUT_STYLE}),
-            'scheme_type': forms.Select(attrs={'class': INPUT_STYLE}),
-            'currency': forms.Select(attrs={'class': INPUT_STYLE}),
-            'parent_fund': forms.Select(attrs={'class': INPUT_STYLE}),
-            'sebi_registration_number': forms.TextInput(attrs={'class': INPUT_STYLE}),
-            'category': forms.Select(attrs={'class': INPUT_STYLE}),
-            'corpus': forms.NumberInput(attrs={'class': INPUT_STYLE}),
-            'sponsor_commitment': forms.NumberInput(attrs={'class': INPUT_STYLE}),
-            'date_of_inception': forms.DateInput(attrs={'class': INPUT_STYLE, 'type': 'date'}),
-            'manager': forms.Select(attrs={'class': INPUT_STYLE}),
+            'date_of_inception': forms.DateInput(attrs={'type': 'date'}),
+            'corpus': forms.NumberInput(attrs={'placeholder': 'Enter amount'}),
+            'sebi_registration_number': forms.TextInput(attrs={'placeholder': 'SEBI/Reg No.'}),
         }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # Automatically apply the styling class to all fields to save time
+        for field in self.fields:
+            self.fields[field].widget.attrs.update({
+                'class': 'w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-indigo-500 transition-all'
+            })
 
 class DocumentForm(forms.ModelForm):
     class Meta:

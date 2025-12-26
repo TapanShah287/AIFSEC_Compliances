@@ -3,6 +3,8 @@ from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.db.models import Sum
 from decimal import Decimal
+from django.utils.text import slugify
+
 import json
 from django.db.models import F
 
@@ -60,7 +62,7 @@ def calculate_nav_view(request, pk):
     )['total'] or Decimal('0.00')
 
     # 2. Asset Side: Cash Balance
-    total_inflow = DrawdownReceipt.objects.filter(fund=fund).aggregate(Sum('amount_received'))['amount_received__sum'] or 0
+    total_inflow = DrawdownReceipt.objects.filter(capital_call__fund=fund).aggregate(Sum('amount_received'))['amount_received__sum'] or 0
     total_outflow = Distribution.objects.filter(fund=fund).aggregate(Sum('gross_amount'))['gross_amount__sum'] or 0
     cash_balance = total_inflow - total_outflow - portfolio_value # Simplistic cash drag
 
@@ -106,6 +108,7 @@ def portal_funds_list(request):
 
 @login_required
 def fund_add(request):
+    """Workflow to launch a new fund."""
     manager_entity = get_current_manager_entity(request)
 
     if request.method == "POST":
@@ -113,15 +116,17 @@ def fund_add(request):
         if form.is_valid():
             fund = form.save(commit=False)
             fund.manager_entity = manager_entity
+            fund.slug = slugify(fund.name)
             fund.save()
-            messages.success(request, f"Fund '{fund.name}' initialized successfully.")
-            return redirect('funds:fund_detail', pk=fund.pk)
+            # SUCCESS WORKFLOW: Redirect to the success celebration page
+            return render(request, "funds/fund_success.html", {"fund": fund})
     else:
         form = FundForm()
 
     return render(request, "funds/fund_add.html", {
         "form": form,
         "manager_entity": manager_entity,
+        "title": "Launch New Fund"
     })
 
 @login_required
@@ -129,6 +134,33 @@ def fund_detail(request, pk):
     fund = get_object_or_404(Fund, pk=pk)
 
     from transactions.forms import CapitalCallForm
+
+# 1. Initialize variables immediately to avoid UnboundLocalError
+    upcoming_tasks = []
+    from django.utils import timezone
+    
+    # 2. Safely fetch compliance tasks
+    try:
+        from compliances.models import ComplianceTask
+        today = timezone.now().date()
+        
+        # Filter tasks specifically for this fund that aren't completed
+        upcoming_tasks = ComplianceTask.objects.filter(
+            fund=fund,
+            status__in=['PENDING', 'IN_PROGRESS']
+        ).order_by('due_date')[:3]
+
+        # Attach helper attributes for the template logic
+        for task in upcoming_tasks:
+            diff = (task.due_date - today).days
+            task.days_left = diff
+            # Using the absolute value logic we discussed
+            task.days_overdue = abs(diff) if diff < 0 else 0
+            
+    except (ImportError, Exception) as e:
+        # If the app isn't ready or table doesn't exist, upcoming_tasks stays []
+        print(f"Compliance fetch error: {e}")
+        upcoming_tasks = []
 
     # Initialize the renamed service
     analytics = FundAnalyticsService(fund)
@@ -140,11 +172,13 @@ def fund_detail(request, pk):
     alerts = []
     if fund.jurisdiction == 'IFSC' and not fund.stewardship_logs.exists():
         alerts.append({'level': 'warning', 'message': 'IFSCA Mandatory: No Stewardship engagements logged yet.'})
-    
+
+
     return render(request, "funds/fund_detail.html", {
         "fund": fund,
         "summary": summary,
-        "compliance_alerts": alerts
+        "compliance_alerts": alerts,
+        "upcoming_tasks": upcoming_tasks
     })
 
 # =========================================================
