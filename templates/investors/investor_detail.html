@@ -136,6 +136,16 @@
                         <td class="px-6 py-3 text-right">
                             <a href="{{ doc.file.url }}" target="_blank" class="text-indigo-600 hover:text-indigo-800 text-xs font-semibold">Download</a>
                         </td>
+                        <td class="px-6 py-3 text-right">
+                            {% if not doc.is_verified and is_compliance_user %}
+                                <a href="{% url 'investors:verify_doc' doc.pk %}" class="text-emerald-600 hover:text-emerald-800 text-xs font-bold mr-3">
+                                    Verify Now
+                                </a>
+                            {% endif %}
+                            <a href="{{ doc.file.url }}" target="_blank" class="text-indigo-600 hover:text-indigo-800 text-xs font-semibold">
+                                Download
+                            </a>
+                        </td>
                     </tr>
                     {% endfor %}
                 </tbody>

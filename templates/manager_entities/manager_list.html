@@ -1,53 +1,110 @@
-<body class="bg-light"><div class="container py-4"><!doctype html><html><head>
-<!-- Added by automated fixer: Bootstrap 5 + meta -->
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-2dyVtHcYq4uW6GfBa6XJgkv1z0uM8sF+K2QGm0Cw8C0fM3Zf3Q8pQ0G3qE3rj1YL" crossorigin="anonymous">
-<link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
-</head>{% extends "base.html" %}
-{% block title %}Manager Entities{% endblock %}
+{% extends 'base.html' %}
+
+{% block title %}My Management Entities{% endblock %}
+
 {% block content %}
-<h1 class="text-2xl font-semibold mb-6">Manager Entities</h1>
-<div class="mb-4 flex flex-wrap items-center gap-3">
-  <form method="get" class="flex items-center gap-2">
-    <input name="q" value="{{ request.GET.q }}" placeholder="Search managers..." class="px-3 py-2 border border-slate-300 rounded-lg text-sm">
-    <button class="px-3 py-2 rounded-lg text-sm bg-slate-800 text-white">Search</button>
-    {% if request.GET.q %}<a href="." class="text-sm text-slate-600 underline">Clear</a>{% endif %}
-  </form>
-  <a href="{% url 'manager_entities:manager_create' %}" class="ml-auto px-3 py-2 bg-indigo-600 text-white rounded-lg text-sm shadow">➕ Add Manager</a>
+<div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
+    <div>
+        <h1 class="text-2xl font-black text-slate-900 tracking-tight">Management Entities</h1>
+        <p class="text-slate-500 text-sm">Overview of all Fund Management Companies you are associated with.</p>
+    </div>
+    
+    <div class="flex items-center gap-3">
+        {% if active_manager %}
+        <a href="{% url 'manager_entities:team_list' active_manager.pk %}" class="bg-white border border-slate-200 text-slate-600 px-5 py-2.5 rounded-xl font-bold text-sm hover:bg-slate-50 transition-all flex items-center gap-2 shadow-sm">
+            <i data-lucide="users" class="w-4 h-4 text-indigo-500"></i> Team Management
+        </a>
+        {% endif %}
+
+        <a href="{% url 'manager_entities:manager_create' %}" class="bg-indigo-600 text-white px-5 py-2.5 rounded-xl font-bold text-sm shadow-lg shadow-indigo-200 hover:bg-indigo-700 transition-all flex items-center gap-2">
+            <i data-lucide="plus-circle" class="w-4 h-4"></i> Register New Entity
+        </a>
+    </div>
 </div>
-<div class="bg-white shadow rounded-lg overflow-hidden border border-slate-200">
-  <h2 class="text-sm font-semibold px-4 py-3 border-b bg-slate-50 text-slate-700 uppercase">Managers</h2>
-  {% if managers %}
-  <div class="overflow-x-auto">
-    <table class="min-w-full text-sm">
-      <thead class="bg-slate-100 text-slate-700 uppercase text-xs">
-        <tr>
-          <th class="px-4 py-2 text-left">Name</th>
-          <th class="px-4 py-2 text-left">SEBI Reg. No.</th>
-          <th class="px-4 py-2 text-left">PAN</th>
-          <th class="px-4 py-2 text-left">GSTIN</th>
-          <th class="px-4 py-2 text-right">Actions</th>
-        </tr>
-      </thead>
-      <tbody>
-        {% for m in managers %}
-        <tr class="border-t hover:bg-slate-50">
-          <td class="px-4 py-2"><a class="text-indigo-700 hover:underline" href="{% url 'manager_entities:manager_detail' m.pk %}">{{ m.name }}</a></td>
-          <td class="px-4 py-2">{{ m.sebi_manager_registration_no|default:"—" }}</td>
-          <td class="px-4 py-2">{{ m.pan|default:"—" }}</td>
-          <td class="px-4 py-2">{{ m.gstin|default:"—" }}</td>
-          <td class="px-4 py-2 text-right"><a class="text-sm underline" href="{% url 'manager_entities:manager_update' m.pk %}">Edit</a></td>
-        </tr>
-        {% endfor %}
-      </tbody>
-    </table>
-  </div>
-  {% else %}
-  <div class="px-4 py-6 text-center text-slate-500">No Manager Entities yet.</div>
-  {% endif %}
+
+<div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm mb-6 flex gap-4">
+    <div class="relative flex-1">
+        <i data-lucide="search" class="absolute left-3 top-3 w-4 h-4 text-slate-400"></i>
+        <form method="get">
+            <input type="text" name="q" value="{{ request.GET.q|default:'' }}" placeholder="Search by Entity Name, SEBI Reg No, or PAN..." 
+                   class="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-medium focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all">
+        </form>
+    </div>
 </div>
+
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+    {% for manager in managers %}
+    <div class="bg-white rounded-3xl border {% if manager.id == request.session.active_entity_id %}border-indigo-500 ring-4 ring-indigo-500/10{% else %}border-slate-200 hover:border-indigo-200{% endif %} shadow-sm p-6 relative group transition-all">
+        
+        {% if manager.id == request.session.active_entity_id %}
+        <div class="absolute top-4 right-4 bg-indigo-50 text-indigo-700 px-2 py-1 rounded-lg text-[10px] font-black uppercase tracking-widest border border-indigo-100 flex items-center gap-1">
+            <span class="w-1.5 h-1.5 rounded-full bg-indigo-600 animate-pulse"></span> Active Session
+        </div>
+        {% endif %}
+
+        <div class="flex items-center gap-4 mb-6">
+            <div class="w-14 h-14 rounded-2xl bg-slate-50 border border-slate-100 flex items-center justify-center text-xl font-black text-slate-400 uppercase">
+                {% if manager.logo %}
+                    <img src="{{ manager.logo.url }}" class="w-full h-full object-cover rounded-2xl">
+                {% else %}
+                    {{ manager.name|slice:":2" }}
+                {% endif %}
+            </div>
+            <div>
+                <h3 class="font-bold text-slate-900 leading-tight">{{ manager.name }}</h3>
+                <p class="text-xs text-slate-500 font-mono mt-1">{{ manager.sebi_manager_registration_no|default:"No Reg ID" }}</p>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-2 gap-4 mb-6">
+            <div class="p-3 bg-slate-50 rounded-xl">
+                <p class="text-[10px] text-slate-400 font-bold uppercase">Tax ID (PAN)</p>
+                <p class="text-xs font-bold text-slate-700 font-mono">{{ manager.pan|default:"--" }}</p>
+            </div>
+            <div class="p-3 bg-slate-50 rounded-xl">
+                <p class="text-[10px] text-slate-400 font-bold uppercase">Funds</p>
+                <p class="text-xs font-bold text-slate-700">{{ manager.fund_set.count }} Active</p>
+            </div>
+        </div>
+
+        <div class="flex items-center gap-3">
+            <a href="{% url 'manager_entities:manager_detail' manager.pk %}" class="flex-1 py-2.5 rounded-xl border border-slate-200 text-xs font-bold text-slate-600 text-center hover:bg-slate-50 transition-colors">
+                View Profile
+            </a>
+            {% if manager.id != request.session.active_entity_id %}
+            <a href="{% url 'manager_entities:switch_manager' manager.pk %}" class="flex-1 py-2.5 rounded-xl bg-slate-900 text-xs font-bold text-white text-center hover:bg-slate-800 transition-colors shadow-lg shadow-slate-200">
+                Switch To
+            </a>
+            {% else %}
+            <button disabled class="flex-1 py-2.5 rounded-xl bg-emerald-50 text-xs font-bold text-emerald-600 text-center border border-emerald-100 cursor-default">
+                Currently Active
+            </button>
+            {% endif %}
+        </div>
+    </div>
+    {% empty %}
+    <div class="col-span-full py-12 text-center bg-slate-50 rounded-3xl border border-dashed border-slate-300">
+        <div class="w-16 h-16 bg-white rounded-full flex items-center justify-center mx-auto mb-4 shadow-sm">
+            <i data-lucide="building-2" class="w-8 h-8 text-slate-300"></i>
+        </div>
+        <h3 class="text-lg font-bold text-slate-900">No Entities Found</h3>
+        <p class="text-slate-500 text-sm mt-1 mb-6">You are not associated with any Fund Management Companies yet.</p>
+        <a href="{% url 'manager_entities:manager_create' %}" class="text-indigo-600 font-bold text-sm hover:underline">Register your first entity &rarr;</a>
+    </div>
+    {% endfor %}
+</div>
+
+{% if is_paginated %}
+<div class="mt-8 flex justify-center">
+    <div class="flex gap-2">
+        {% if page_obj.has_previous %}
+            <a href="?page={{ page_obj.previous_page_number }}&q={{ request.GET.q }}" class="px-4 py-2 bg-white border border-slate-200 rounded-lg text-sm font-medium text-slate-600 hover:bg-slate-50">Previous</a>
+        {% endif %}
+        <span class="px-4 py-2 bg-slate-100 rounded-lg text-sm font-bold text-slate-900">Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</span>
+        {% if page_obj.has_next %}
+            <a href="?page={{ page_obj.next_page_number }}&q={{ request.GET.q }}" class="px-4 py-2 bg-white border border-slate-200 rounded-lg text-sm font-medium text-slate-600 hover:bg-slate-50">Next</a>
+        {% endif %}
+    </div>
+</div>
+{% endif %}
 {% endblock %}
-</div><!-- Added by automated fixer: Bootstrap JS -->
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-j1k2cbn6hQYQW3xw2VbX9kC9o7bT8o6yC5dYF6q0bYkI3yXl9hKxZ+o5uS7Jj9Lx" crossorigin="anonymous"></script>
-</body>

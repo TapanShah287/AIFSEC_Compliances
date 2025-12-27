@@ -1,0 +1,59 @@
+{% extends 'base.html' %}
+
+{% block title %}Manage Currency{% endblock %}
+
+{% block content %}
+<div class="max-w-xl mx-auto">
+    <div class="mb-8">
+        <a href="{% url 'currencies:currency_list' %}" class="text-xs font-bold text-slate-500 hover:text-indigo-600 flex items-center gap-1 mb-4">
+            <i data-lucide="arrow-left" class="w-3 h-3"></i> Back to List
+        </a>
+        <h1 class="text-2xl font-black text-slate-900 tracking-tight">
+            {% if form.instance.pk %}Edit Currency{% else %}Add New Currency{% endif %}
+        </h1>
+    </div>
+
+    <div class="bg-white rounded-3xl border border-slate-200 shadow-sm p-8">
+        <form method="post" class="space-y-6">
+            {% csrf_token %}
+            
+            <div class="grid grid-cols-2 gap-6">
+                <div class="space-y-1.5">
+                    <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest">ISO Code (e.g. USD)</label>
+                    {{ form.code }}
+                </div>
+                <div class="space-y-1.5">
+                    <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest">Symbol (e.g. $)</label>
+                    {{ form.symbol }}
+                </div>
+            </div>
+
+            <div class="space-y-1.5">
+                <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest">Currency Name</label>
+                {{ form.name }}
+            </div>
+
+            <div class="flex items-center gap-3 p-4 bg-slate-50 rounded-2xl border border-slate-100">
+                {{ form.is_base }}
+                <div>
+                    <label for="{{ form.is_base.id_for_label }}" class="text-sm font-bold text-slate-700 block">Set as System Base Currency</label>
+                    <p class="text-[10px] text-slate-400">All reporting will be converted to this currency by default.</p>
+                </div>
+            </div>
+
+            <button type="submit" class="w-full bg-indigo-600 text-white py-3.5 rounded-2xl font-black text-sm shadow-xl shadow-indigo-100 hover:bg-indigo-700 transition-all">
+                Save Currency Configuration
+            </button>
+        </form>
+    </div>
+</div>
+
+<style>
+    input[type="text"], select {
+        width: 100%; padding: 0.75rem 1rem; background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 0.75rem; font-size: 0.875rem; outline: none;
+    }
+    input[type="checkbox"] {
+        width: 1.25rem; h-weight: 1.25rem; accent-color: #4f46e5;
+    }
+</style>
+{% endblock %}

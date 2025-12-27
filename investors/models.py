@@ -30,7 +30,12 @@ class Investor(models.Model):
 
     name = models.CharField(max_length=255)
     investor_type = models.CharField(max_length=20, choices=INVESTOR_TYPE_CHOICES, default='INDIVIDUAL')
-    
+    manager_entities = models.ManyToManyField(
+        'manager_entities.ManagerEntity', 
+        related_name='investors',
+        blank=True
+    )
+
     # Contact Info
     email = models.EmailField(unique=True)
     phone = models.CharField(max_length=20, blank=True, null=True)

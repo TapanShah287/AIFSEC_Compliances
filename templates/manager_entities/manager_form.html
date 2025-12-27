@@ -1,30 +1,88 @@
-<body class="bg-light"><div class="container py-4"><!doctype html><html><head>
-<!-- Added by automated fixer: Bootstrap 5 + meta -->
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-2dyVtHcYq4uW6GfBa6XJgkv1z0uM8sF+K2QGm0Cw8C0fM3Zf3Q8pQ0G3qE3rj1YL" crossorigin="anonymous">
-<link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
-</head>{% extends "base.html" %}
-{% block title %}{{ manager|default_if_none:"New" }} Manager Entity{% endblock %}
-{% block content %}
-<h1 class="text-2xl font-semibold mb-6">{% if manager %}Edit{% else %}New{% endif %} Manager Entity</h1>
-<form method="post" class="bg-white shadow rounded-lg overflow-hidden border border-slate-200 p-4 space-y-4">
-  {% csrf_token %}
-  {{ form.non_field_errors }}
-  {% for field in form %}
-    <div>
-      <label class="block text-sm font-medium text-slate-700">{{ field.label }}</label>
-      {{ field }}
-      {% if field.help_text %}<p class="text-xs text-slate-500">{{ field.help_text }}</p>{% endif %}
-      {% for e in field.errors %}<p class="text-xs text-rose-600">{{ e }}</p>{% endfor %}
-    </div>
-  {% endfor %}
-  <div class="flex gap-2">
-    <button class="px-3 py-2 bg-indigo-600 text-white rounded-lg text-sm">Save</button>
-    <a href="{% url 'manager_entities:manager_list' %}" class="px-3 py-2 text-sm underline">Cancel</a>
-  </div>
-</form>
+{% extends 'base.html' %}
+
+{% block title %}
+    {% if form.instance.pk %}Update {{ form.instance.name }}{% else %}Register New Entity{% endif %}
 {% endblock %}
-</div><!-- Added by automated fixer: Bootstrap JS -->
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-j1k2cbn6hQYQW3xw2VbX9kC9o7bT8o6yC5dYF6q0bYkI3yXl9hKxZ+o5uS7Jj9Lx" crossorigin="anonymous"></script>
-</body>
+
+{% block content %}
+<div class="max-w-3xl mx-auto">
+    <div class="mb-8 text-center">
+        <h1 class="text-2xl font-black text-slate-900 tracking-tight">
+            {% if form.instance.pk %}Update Entity Details{% else %}Register Management Entity{% endif %}
+        </h1>
+        <p class="text-slate-500 text-sm mt-1">
+            {% if form.instance.pk %}Update statutory or contact details for this entity.{% else %}Set up a new Fund Management Company in the system.{% endif %}
+        </p>
+    </div>
+
+    <div class="bg-white rounded-3xl border border-slate-200 shadow-xl overflow-hidden">
+        <form method="post" enctype="multipart/form-data" class="p-8">
+            {% csrf_token %}
+            
+            {% if form.non_field_errors %}
+            <div class="mb-6 p-4 bg-rose-50 border border-rose-100 rounded-xl text-sm text-rose-600 font-medium">
+                {{ form.non_field_errors }}
+            </div>
+            {% endif %}
+
+            <div class="mb-8">
+                <h3 class="text-xs font-black text-slate-400 uppercase tracking-widest mb-6 pb-2 border-b border-slate-100">Corporate Identity</h3>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div class="col-span-full">
+                        <label class="block text-xs font-bold text-slate-700 mb-2">Entity Name <span class="text-rose-500">*</span></label>
+                        {{ form.name }}
+                        {{ form.name.errors }}
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 mb-2">SEBI Registration No.</label>
+                        {{ form.sebi_manager_registration_no }}
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 mb-2">CIN</label>
+                        {{ form.cin }}
+                    </div>
+                </div>
+            </div>
+
+            <div class="mb-8">
+                <h3 class="text-xs font-black text-slate-400 uppercase tracking-widest mb-6 pb-2 border-b border-slate-100">Tax & Compliance</h3>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 mb-2">PAN Number</label>
+                        {{ form.pan }}
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 mb-2">GSTIN</label>
+                        {{ form.gstin }}
+                    </div>
+                </div>
+            </div>
+
+            <div class="mb-8">
+                <h3 class="text-xs font-black text-slate-400 uppercase tracking-widest mb-6 pb-2 border-b border-slate-100">Contact Information</h3>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 mb-2">Official Email</label>
+                        {{ form.contact_email }}
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 mb-2">Contact Phone</label>
+                        {{ form.contact_phone }}
+                    </div>
+                    <div class="col-span-full">
+                        <label class="block text-xs font-bold text-slate-700 mb-2">Registered Address</label>
+                        {{ form.registered_address }}
+                    </div>
+                </div>
+            </div>
+
+            <div class="flex items-center justify-end gap-4 pt-6 border-t border-slate-100">
+                <a href="{% url 'manager_entities:manager_list' %}" class="px-6 py-2.5 rounded-xl text-sm font-bold text-slate-500 hover:bg-slate-50 transition-all">Cancel</a>
+                <button type="submit" class="px-6 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-sm font-bold shadow-lg shadow-indigo-200 transition-all">
+                    {% if form.instance.pk %}Save Changes{% else %}Register Entity{% endif %}
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

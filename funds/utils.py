@@ -2,9 +2,16 @@
 from manager_entities.models import ManagerEntity
 
 def get_current_manager_entity(request):
-    """Returns the ManagerEntity for the current environment."""
-    # For now: first manager. Later: per-user mapping
-    return ManagerEntity.objects.first()
+    active_id = request.session.get('active_entity_id')
+    if active_id:
+        return ManagerEntity.objects.filter(id=active_id).first()
+    
+    # Fallback to the first associated entity if session is empty
+    first_membership = request.user.memberships.first()
+    if first_membership:
+        request.session['active_entity_id'] = first_membership.entity.id
+        return first_membership.entity
+    return None
 
 class ManagerEntityMixin:
     """Mixin to auto-provide manager_entity to all views."""

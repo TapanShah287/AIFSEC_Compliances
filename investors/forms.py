@@ -9,13 +9,14 @@ class InvestorForm(forms.ModelForm):
     class Meta:
         model = Investor
         fields = [
-            'name', 'investor_type', 'email', 'phone', 'pan', 
+            'name', 'investor_type', 'manager_entities', 'email', 'phone', 'pan', 
             'demat_account_no', 'dp_id', 'accreditation_status', 
             'accreditation_expiry', 'kyc_status', 'risk_appetite'
         ]
         widgets = {
             'name': forms.TextInput(attrs={'placeholder': 'Full Legal Name', **STYLE}),
             'investor_type': forms.Select(attrs=STYLE),
+            'manager_entities': forms.SelectMultiple(attrs=STYLE),
             'email': forms.EmailInput(attrs={'placeholder': 'Email Address', **STYLE}),
             'phone': forms.TextInput(attrs={'placeholder': '+91 ...', **STYLE}),
             'pan': forms.TextInput(attrs={'placeholder': 'ABCDE1234F', **STYLE}),
@@ -26,6 +27,14 @@ class InvestorForm(forms.ModelForm):
             'kyc_status': forms.Select(attrs=STYLE),
             'risk_appetite': forms.Select(attrs=STYLE),
         }
+        
+    def __init__(self, *args, **kwargs):
+        # Optional: Logic to filter or auto-select the active manager entity
+        active_manager = kwargs.pop('active_manager', None)
+        super().__init__(*args, **kwargs)
+        
+        if active_manager:
+            self.fields['manager_entities'].initial = [active_manager]
 
 class InvestorDocumentForm(forms.ModelForm):
     class Meta:

@@ -16,7 +16,7 @@ from rest_framework.permissions import IsAuthenticated
 from .models import Fund, StewardshipEngagement, NavSnapshot
 from manager_entities.models import ManagerEntity
 from .forms import FundForm, StewardshipEngagementForm, NavSnapshotForm
-from transactions.forms import DrawdownReceiptForm
+from transactions.forms import DrawdownReceiptForm, DistributionForm, InvestorCommitmentForm, CapitalCallForm
 from .serializers import FundSerializer
 
 # FIXED IMPORT: Now pointing to analytics.py to avoid conflict with services/ folder
@@ -41,6 +41,22 @@ class FundViewSet(viewsets.ModelViewSet):
         return Fund.objects.filter(
             manager_entity=manager_entity
         ).order_by('-date_of_inception')
+# =========================================================
+
+def get_current_manager_entity(request):
+    """
+    Retrieves the Manager Entity currently active in the user's session.
+    """
+    active_id = request.session.get('active_entity_id')
+    if active_id:
+        return ManagerEntity.objects.filter(id=active_id).first()
+    
+    # Fallback to the first associated entity if session is empty
+    first_membership = request.user.memberships.first()
+    if first_membership:
+        request.session['active_entity_id'] = first_membership.entity.id
+        return first_membership.entity
+    return None
 
 # =========================================================
 #  CORE FUND MANAGEMENT
@@ -83,14 +99,6 @@ def calculate_nav_view(request, pk):
         'nav_per_unit': nav_per_unit,
     }
     return render(request, 'funds/nav_computation.html', context)
-
-def get_current_manager_entity(request):
-    """
-    For now: return the first (or only) ManagerEntity.
-    Later you can map request.user -> ManagerEntity.
-    """
-    # If you have only one manager, this is enough:
-    return ManagerEntity.objects.first()
 
 @login_required
 def portal_funds_list(request):
@@ -309,17 +317,19 @@ def add_commitment(request, pk):
 @login_required
 def create_capital_call(request, pk):
     fund = get_object_or_404(Fund, pk=pk)
+    
     if request.method == "POST":
-        form = CapitalCallForm(request.POST, fund_context=fund)
+        form = CapitalCallForm(request.POST, fund_context=fund) # Pass fund here
         if form.is_valid():
-            obj = form.save(commit=False)
-            obj.fund = fund
-            obj.save()
-            messages.success(request, "Capital Call created.")
+            call = form.save(commit=False)
+            call.fund = fund # Ensure the call object is linked to the fund
+            call.save()
+            messages.success(request, "Capital call issued successfully.")
             return redirect('funds:fund_detail', pk=fund.pk)
     else:
-        form = CapitalCallForm(fund_context=fund)
-    return render(request, "funds/add_capital_call.html", {"fund": fund, "form": form})
+        form = CapitalCallForm(fund_context=fund) # Pass fund here
+        
+    return render(request, "transactions/add_capitalcall.html", {"fund": fund, "form": form})
 
 @login_required
 def add_receipt(request, pk):

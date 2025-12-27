@@ -25,6 +25,9 @@ urlpatterns = [
     path("portal/investors/", include("investors.urls")), 
     path("portal/companies/", include("investee_companies.urls")),
     path("portal/compliance/", include("compliances.urls")),
+    path('portal/managers/', include("manager_entities.urls")),
+    path('portal/settings/currencies/', include('currencies.urls')),
+
 
     # NEW: Transactions App URLs
     path('portal/txn/', include('transactions.urls')), 

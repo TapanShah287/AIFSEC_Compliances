@@ -1,0 +1,61 @@
+{% extends 'base.html' %}
+
+{% block title %}General Settings{% endblock %}
+{% block page_title %}General Settings{% endblock %}
+
+{% block content %}
+<div class="mb-8">
+    <h1 class="text-2xl font-black text-slate-900 tracking-tight">General Settings</h1>
+    <p class="text-slate-500 text-sm">Manage global system configurations and administrative tasks.</p>
+</div>
+
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+    <a href="{% url 'manager_entities:manager_list' %}" class="bg-white p-6 rounded-3xl border border-slate-200 hover:border-indigo-500 hover:shadow-xl hover:shadow-indigo-100 transition-all group">
+        <div class="w-12 h-12 bg-indigo-50 rounded-2xl flex items-center justify-center text-indigo-600 mb-4 group-hover:bg-indigo-600 group-hover:text-white transition-colors">
+            <i data-lucide="building-2" class="w-6 h-6"></i>
+        </div>
+        <h3 class="font-bold text-slate-900 text-lg">Manager Entities</h3>
+        <p class="text-slate-500 text-xs mt-2 leading-relaxed">Register and manage Fund Management Companies, statutory details, and their respective teams.</p>
+    </a>
+
+    <a href="#" class="bg-white p-6 rounded-3xl border border-slate-200 hover:border-indigo-500 hover:shadow-xl hover:shadow-indigo-100 transition-all group">
+        <div class="w-12 h-12 bg-emerald-50 rounded-2xl flex items-center justify-center text-emerald-600 mb-4 group-hover:bg-emerald-600 group-hover:text-white transition-colors">
+            <i data-lucide="user-plus" class="w-6 h-6"></i>
+        </div>
+        <h3 class="font-bold text-slate-900 text-lg">User Management</h3>
+        <p class="text-slate-500 text-xs mt-2 leading-relaxed">Create new system users, manage passwords, and oversee global platform access levels.</p>
+    </a>
+
+    <a href="{% url 'currencies:currency_list' %}" class="bg-white p-6 rounded-3xl border border-slate-200 hover:border-indigo-500 hover:shadow-xl hover:shadow-indigo-100 transition-all group">
+        <div class="w-12 h-12 bg-amber-50 rounded-2xl flex items-center justify-center text-amber-600 mb-4 group-hover:bg-amber-600 group-hover:text-white transition-colors">
+            <i data-lucide="coins" class="w-6 h-6"></i>
+        </div>
+        <h3 class="font-bold text-slate-900 text-lg">Currency & FX</h3>
+        <p class="text-slate-500 text-xs mt-2 leading-relaxed">Configure reporting currencies (INR, USD, etc.) and manage exchange rates for fund reporting.</p>
+    </a>
+</div>
+
+<div class="mt-12 pt-8 border-t border-slate-200">
+    <h3 class="text-xs font-black text-slate-400 uppercase tracking-widest mb-6">System Maintenance</h3>
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div class="flex items-center gap-4 p-4 bg-slate-50 rounded-2xl border border-slate-100">
+            <div class="w-10 h-10 bg-white rounded-xl flex items-center justify-center shadow-sm text-slate-400">
+                <i data-lucide="shield-check" class="w-5 h-5"></i>
+            </div>
+            <div>
+                <p class="text-sm font-bold text-slate-700">Audit Logs</p>
+                <p class="text-[10px] text-slate-500">Track all administrative changes and login activity.</p>
+            </div>
+        </div>
+        <div class="flex items-center gap-4 p-4 bg-slate-50 rounded-2xl border border-slate-100 opacity-60">
+            <div class="w-10 h-10 bg-white rounded-xl flex items-center justify-center shadow-sm text-slate-400">
+                <i data-lucide="database" class="w-5 h-5"></i>
+            </div>
+            <div>
+                <p class="text-sm font-bold text-slate-700">Backup & Restore</p>
+                <p class="text-[10px] text-slate-500">Schedule system backups (Cloud Storage).</p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

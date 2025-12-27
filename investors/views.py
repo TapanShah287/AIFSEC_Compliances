@@ -74,8 +74,12 @@ def portal_investor_list(request):
     Registry view with support for Denomination Scaling (INR/Cr/M).
     FIXED: Uses a wrapped data structure to ensure template compatibility.
     """
+    active_id = request.session.get('active_entity_id')
     query = request.GET.get('q', '')
     investors_queryset = Investor.objects.all().order_by('name')
+    base_investors = Investor.objects.filter(
+        manager_entities__id=active_id
+    ).distinct()
 
     if query:
         investors = investors.filter(
@@ -96,29 +100,34 @@ def portal_investor_list(request):
         suffix = "M"
 
 # 1. Total Commitments (Aggregate across all investors)
-    total_committed_aggregate = InvestorCommitment.objects.aggregate(
-        total=Sum('amount_committed'))['total'] or 0
+    total_committed_aggregate = InvestorCommitment.objects.filter(
+        fund__manager_entity_id=active_id
+    ).aggregate(total=Sum('amount_committed'))['total'] or 0
 
     # 2. Total Contributed (Aggregate across all receipts)
-    total_contributed_aggregate = DrawdownReceipt.objects.aggregate(
-        total=Sum('amount_received'))['total'] or 0
+    total_contributed_aggregate = DrawdownReceipt.objects.filter(
+        fund__manager_entity_id=active_id
+    ).aggregate(total=Sum('amount_received'))['total'] or 0
 
     # 3. Pending KYC Count
-    pending_kyc_count = Investor.objects.filter(kyc_status='PENDING').count()
+    pending_kyc_count = base_investors.filter(kyc_status='PENDING').count()
 
 # --- INDIVIDUAL ROW LOGIC ---
 
     investors_data = []
-    investors = investors_queryset.all()
 
-    for investor in investors:
+    for investor in base_investors.order_by('name'):
         # Commitment for this specific investor
-        committed = InvestorCommitment.objects.filter(investor=investor).aggregate(
-            total=Sum('amount_committed'))['total'] or 0
+        committed = InvestorCommitment.objects.filter(
+            investor=investor, 
+            fund__manager_entity_id=active_id
+        ).aggregate(total=Sum('amount_committed'))['total'] or 0
         
         # Contribution for this specific investor
-        contributed = DrawdownReceipt.objects.filter(investor=investor).aggregate(
-            total=Sum('amount_received'))['total'] or 0
+        contributed = DrawdownReceipt.objects.filter(
+            investor=investor, 
+            fund__manager_entity_id=active_id
+        ).aggregate(total=Sum('amount_received'))['total'] or 0
         
         # Calculate Funded Percentage for the progress bar
         funded_pct = (contributed / committed * 100) if committed > 0 else 0
@@ -136,6 +145,8 @@ def portal_investor_list(request):
         'total_committed_aggregate': total_committed_aggregate / scale,
         'total_contributed_aggregate': total_contributed_aggregate / scale,
         'pending_kyc_count': pending_kyc_count,
+        'suffix': suffix,
+        'denom': denom,
     })
 
 @login_required
@@ -145,6 +156,7 @@ def portal_investor_detail(request, pk):
     Shows cross-fund commitments, uncalled capital, and document vault.
     """
     investor = get_object_or_404(Investor, pk=pk)
+    is_compliance_user = request.user.groups.filter(name='Compliance').exists()
     
     # 1. Fetch Commitments
     commitments = InvestorCommitment.objects.filter(investor=investor).select_related('fund')
@@ -183,6 +195,7 @@ def portal_investor_detail(request, pk):
 
     context = {
         'investor': investor,
+        'is_compliance_user': is_compliance_user,
         'commitments': commitments,
         'total_committed': total_committed,
         'total_contributed': total_contributed,
@@ -196,14 +209,19 @@ def portal_investor_detail(request, pk):
 @login_required
 def portal_investor_add(request):
     """Register a new investor with 2025 compliance details."""
+    active_entity_id = request.session.get('active_entity_id')
+
     if request.method == "POST":
         form = InvestorForm(request.POST)
         if form.is_valid():
             investor = form.save()
+            if active_entity_id:
+                investor.manager_entities.add(active_entity_id)
+
             messages.success(request, f"Investor '{investor.name}' registered. Please upload KYC documents.")
             return redirect('investors:portal-detail', pk=investor.pk)
     else:
-        form = InvestorForm()
+        form = InvestorForm(active_manager=active_entity_id)
     
     return render(request, 'investors/investor_add.html', {'form': form})
 
@@ -243,3 +261,67 @@ def add_commitment(request, pk):
         'investor': investor, 
         'form': form
     })
+
+# ==========================================
+# 3. Document Management Views (HTML Templates)
+# ==========================================
+
+@login_required
+def upload_investor_document(request, pk):
+    """
+    Handles file uploads to the Investor's Document Vault.
+    """
+    investor = get_object_or_404(Investor, pk=pk)
+    
+    if request.method == 'POST':
+        form = InvestorDocumentForm(request.POST, request.FILES)
+        if form.is_valid():
+            doc = form.save(commit=False)
+            doc.investor = investor
+            doc.save()
+            messages.success(request, f"{doc.get_doc_type_display()} uploaded successfully.")
+            return redirect('investors:portal-detail', pk=investor.pk)
+    
+    return redirect('investors:portal-detail', pk=investor.pk)
+
+# ==========================================
+# 4. Authoriser Views (HTML Templates)
+# ==========================================
+
+@login_required
+def verify_document(request, doc_pk):
+    """
+    Toggles the verification status of a specific document.
+    Only accessible to users with 'Compliance' or 'Admin' roles.
+    """
+    doc = get_object_or_404(InvestorDocument, pk=doc_pk)
+    
+    # Logic to ensure only Compliance Officers can verify
+    if not request.user.groups.filter(name='Compliance').exists():
+        messages.error(request, "Unauthorized: Only Compliance can verify documents.")
+        return redirect('investors:portal-detail', pk=doc.investor.pk)
+
+    doc.is_verified = True
+    doc.verified_at = timezone.now()
+    doc.save()
+    
+    # Check if all mandatory docs are now verified
+    check_and_update_kyc_status(doc.investor)
+    
+    messages.success(request, f"{doc.get_doc_type_display()} has been verified.")
+    return redirect('investors:portal-detail', pk=doc.investor.pk)
+
+def check_and_update_kyc_status(investor):
+    """
+    Business logic: If mandatory docs exist and are verified, 
+    mark investor as VERIFIED.
+    """
+    mandatory_types = ['PAN', 'BANK_PROOF']
+    if investor.investor_type == 'ENTITY':
+        mandatory_types.append('FATCA_CRS')
+        
+    verified_types = investor.documents.filter(is_verified=True).values_list('doc_type', flat=True)
+    
+    if all(mtype in verified_types for mtype in mandatory_types):
+        investor.kyc_status = 'VERIFIED'
+        investor.save()

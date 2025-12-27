@@ -30,6 +30,15 @@ class CapitalCallForm(forms.ModelForm):
             'reference': forms.TextInput(attrs={'class': INPUT_STYLE, 'placeholder': 'Unique Ref'}),
         }
 
+    def __init__(self, *args, **kwargs):
+        # Extract the fund_context from kwargs
+        self.fund = kwargs.pop('fund_context', None)
+        super().__init__(*args, **kwargs)
+        if self.fund:
+            self.fields['investor'].queryset = Investor.objects.filter(
+                commitments__fund=self.fund
+            ).distinct()
+        
 class DrawdownReceiptForm(forms.ModelForm):
     class Meta:
         model = DrawdownReceipt

@@ -1,0 +1,59 @@
+{% extends 'base.html' %}
+
+{% block title %}Create System User{% endblock %}
+
+{% block content %}
+<div class="max-w-2xl mx-auto">
+    <div class="mb-8">
+        <a href="{% url 'manager_entities:settings_hub' %}" class="text-xs font-bold text-slate-500 hover:text-indigo-600 flex items-center gap-1 mb-4">
+            <i data-lucide="arrow-left" class="w-3 h-3"></i> Back to Settings
+        </a>
+        <h1 class="text-2xl font-black text-slate-900 tracking-tight">Create New User</h1>
+        <p class="text-slate-500 text-sm">Add a new staff member to the AIFSEC platform.</p>
+    </div>
+
+    <div class="bg-white rounded-3xl border border-slate-200 shadow-sm p-8">
+        <form method="post" class="space-y-6">
+            {% csrf_token %}
+            {% for field in form %}
+                <div class="space-y-1.5">
+                    <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest block">{{ field.label }}</label>
+                    {{ field }}
+                    {% if field.errors %}
+                        <p class="text-rose-500 text-xs font-bold">{{ field.errors.0 }}</p>
+                    {% endif %}
+                    {% if field.help_text %}
+                        <p class="text-[10px] text-slate-400 italic">{{ field.help_text }}</p>
+                    {% endif %}
+                </div>
+            {% endfor %}
+            
+            <div class="pt-4">
+                <button type="submit" class="w-full bg-indigo-600 text-white py-3.5 rounded-2xl font-black text-sm shadow-xl shadow-indigo-100 hover:bg-indigo-700 transition-all">
+                    Register User Account
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<style>
+    /* Styling the Django form inputs to match Tailwind UI */
+    input {
+        width: 100%;
+        padding: 0.75rem 1rem;
+        background-color: #f8fafc;
+        border: 1px solid #e2e8f0;
+        border-radius: 0.75rem;
+        font-size: 0.875rem;
+        font-weight: 500;
+        outline: none;
+        transition: all 0.2s;
+    }
+    input:focus {
+        border-color: #4f46e5;
+        background-color: white;
+        box-shadow: 0 0 0 4px rgba(79, 70, 229, 0.05);
+    }
+</style>
+{% endblock %}

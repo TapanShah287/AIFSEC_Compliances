@@ -1,6 +1,8 @@
 # manager_entities/forms.py
 from django import forms
 from .models import ManagerEntity
+from django.contrib.auth.models import User
+from django.contrib.auth.forms import UserCreationForm
 
 # Common styling attributes for form widgets
 form_widget_attrs = {
@@ -24,3 +26,13 @@ class ManagerForm(forms.ModelForm):
             'contact_email': forms.EmailInput(attrs=form_widget_attrs),
             'contact_phone': forms.TextInput(attrs=form_widget_attrs),
         }
+
+
+class PortalUserCreationForm(UserCreationForm):
+    email = forms.EmailField(required=True)
+    first_name = forms.CharField(max_length=30, required=True)
+    last_name = forms.CharField(max_length=30, required=True)
+
+    class Meta(UserCreationForm.Meta):
+        model = User
+        fields = ("username", "first_name", "last_name", "email")
