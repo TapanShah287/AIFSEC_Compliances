@@ -7,13 +7,15 @@ from rest_framework.permissions import IsAuthenticated
 from django_filters.rest_framework import DjangoFilterBackend
 from datetime import date, timedelta
 import calendar
+from django.db.models import Min
+from django.urls import reverse
 
 
 # Local Imports
 from .models import ComplianceTask, ComplianceDocument
 from .serializers import ComplianceTaskSerializer, ComplianceDocumentSerializer
 from .forms import ComplianceTaskForm, ComplianceDocumentForm
-from .services import generate_for_purchase, generate_for_redemption
+#from .services import generate_for_purchase, generate_for_redemption
 from funds.models import Fund
 from transactions.models import PurchaseTransaction, RedemptionTransaction
 from django.utils import timezone
@@ -64,45 +66,95 @@ def dashboard_view(request):
 @login_required
 def create_task(request):
     """
-    Handles manual task creation.
+    Handles manual task creation with smart redirect and auto-fill.
     """
+    # 1. Capture fund_id from URL (works for both GET and POST if form action is empty)
+    fund_id = request.GET.get('fund')
+
     if request.method == 'POST':
         form = ComplianceTaskForm(request.POST)
         if form.is_valid():
             task = form.save()
             messages.success(request, f"Task '{task.title}' created successfully.")
+            
+            # 2. Smart Redirect Logic
+            # If we started with a specific fund, go back to that fund's filtered list
+            if fund_id:
+                base_url = reverse('compliances:task-list')
+                return redirect(f"{base_url}?fund={fund_id}")
+            
+            # Otherwise, go to the main list
             return redirect('compliances:task-list')
     else:
-        form = ComplianceTaskForm()
+        # 3. Auto-fill Logic
+        # If fund_id is present, pre-select it in the dropdown
+        initial_data = {}
+        if fund_id:
+            initial_data['fund'] = fund_id
+            
+        form = ComplianceTaskForm(initial=initial_data)
 
     return render(request, 'compliances/task_form.html', {'form': form})
-
-
 
 
 @login_required
 def task_list_view(request):
     """
-    Renders the List View of compliance tasks.
+    Focused List View logic for Multiple Funds:
+    1. Always show ALL tasks that are PENDING/OVERDUE for dates <= Today.
+    2. For future dates, show the earliest task for each Rule PER FUND.
     """
     fund_id = request.GET.get('fund')
     today = timezone.now().date()
-    tasks = ComplianceTask.objects.all()
-
+    next_week = today + timedelta(days=7)
+    next_30 = today + timedelta(days=30)
+    
+    # 1. Base Queryset
+    base_qs = ComplianceTask.objects.all().select_related('compliance_master', 'fund')
+    
+    # Apply global filter if a specific fund is selected in the UI
     if fund_id:
-        tasks = tasks.filter(fund_id=fund_id)
+        base_qs = base_qs.filter(fund_id=fund_id)
 
-    # Calculate Summary Stats for the "Kanban-lite" header
+    overdue_count = base_qs.filter(due_date__lt=today).exclude(status='COMPLETED').count()
+    due_this_week = base_qs.filter(due_date__range=[today, next_week]).exclude(status='COMPLETED').count()
+    upcoming_count = base_qs.filter(due_date__range=[today, next_30]).exclude(status='COMPLETED').count()
+    completed_count = base_qs.filter(status='COMPLETED').count()
+
+    # 2. Get IDs for ALL Overdue or Pending tasks (Past or Present)
+    # These must stay visible until completed.
+    actionable_ids = base_qs.filter(
+        due_date__lte=today
+    ).exclude(status='COMPLETED').values_list('id', flat=True)
+
+    # 3. Get IDs for the "Next Up" tasks for EACH Fund
+    # We group by both 'fund' and 'compliance_master'
+    future_earliest_ids = base_qs.filter(
+        due_date__gt=today,
+        status='PENDING'
+    ).values('fund', 'compliance_master').annotate(
+        earliest_id=Min('id')
+    ).values_list('earliest_id', flat=True)
+
+    # 4. Combine IDs and fetch final QuerySet
+    final_ids = list(set(list(actionable_ids) + list(future_earliest_ids)))
+    tasks = ComplianceTask.objects.filter(id__in=final_ids).order_by('due_date', 'fund__name')
+
+    # Metrics for Dashboard
     context = {
         'tasks': tasks,
         'fund_id': fund_id,
-        'overdue_count': tasks.filter(due_date__lt=today, status__in=['PENDING', 'IN_PROGRESS']).count(),
-        'due_this_week': tasks.filter(due_date__range=[today, today + timedelta(days=7)]).count(),
-        'upcoming_count': tasks.filter(due_date__gt=today + timedelta(days=7)).count(),
-        'completed_count': tasks.filter(status='COMPLETED').count(),
-        'current_tab': 'list'
+        'overdue_count': base_qs.filter(due_date__lt=today).exclude(status='COMPLETED').count(),
+        'total_active_funds': base_qs.values('fund').distinct().count(),
+        'overdue_count': overdue_count,
+        'due_this_week': due_this_week,
+        'upcoming_count': upcoming_count,
+        'completed_count': completed_count,
+        'current_tab': 'list',
     }
+    
     return render(request, 'compliances/task_list.html', context)
+
 
 @login_required
 def task_detail_view(request, pk):
@@ -174,57 +226,6 @@ def upload_compliance_evidence(request, task_id):
             
         messages.success(request, "Compliance evidence successfully archived.")
     return redirect(request.META.get('HTTP_REFERER', 'compliances:dashboard'))
-
-@login_required
-def generate_from_purchase(request, pk):
-    """Automated task generation from a Purchase Transaction."""
-    from transactions.models import PurchaseTransaction
-    purchase = get_object_or_404(PurchaseTransaction, pk=pk)
-    
-    task, created = ComplianceTask.objects.get_or_create(
-        fund=purchase.fund,
-        purchase_transaction=purchase,
-        topic='DOCUMENT',
-        defaults={
-            'description': f"Collect SHA and closing documents for investment in {purchase.investee_company.name}.",
-            'due_date': timezone.now().date() + timezone.timedelta(days=7),
-            'status': 'PENDING'
-        }
-    )
-    
-    if created:
-        messages.success(request, "Compliance workflow initiated for this purchase.")
-    else:
-        messages.info(request, "A compliance task is already active for this transaction.")
-        
-    return redirect('compliances:task_detail', pk=task.pk)
-
-@login_required
-def generate_from_redemption(request, pk):
-    """
-    Automated task generation from a Redemption Transaction.
-    FIXED: Added this missing view to resolve AttributeError in urls.py.
-    """
-    from transactions.models import RedemptionTransaction
-    redemption = get_object_or_404(RedemptionTransaction, pk=pk)
-    
-    task, created = ComplianceTask.objects.get_or_create(
-        fund=redemption.fund,
-        redemption_transaction=redemption,
-        topic='DOCUMENT',
-        defaults={
-            'description': f"Collect exit documents and redemption filings for {redemption.investee_company.name}.",
-            'due_date': timezone.now().date() + timezone.timedelta(days=7),
-            'status': 'PENDING'
-        }
-    )
-    
-    if created:
-        messages.success(request, "Compliance workflow initiated for this redemption.")
-    else:
-        messages.info(request, "A compliance task is already active for this transaction.")
-        
-    return redirect('compliances:task_detail', pk=task.pk)
 
 @login_required
 def task_delete_view(request, pk):
@@ -299,28 +300,50 @@ def calendar_view(request):
     
     return render(request, 'compliances/calendar.html', context)
 
+from django.db.models import Count, Q
+
 @login_required
 def compliance_reports_view(request):
-    # Stats for the top cards
-    funds = Fund.objects.all()
+    """
+    Enhanced Reporting View:
+    1. Groups funds by Jurisdiction (SEBI/IFSCA).
+    2. Flags 'At Risk' funds with overdue tasks.
+    3. Optimized with Prefetching to prevent 'N+1' query issues.
+    """
+    # Use prefetch_related to get tasks efficiently for all funds at once
+    funds = Fund.objects.all().prefetch_related('fund_compliance_tasks')
+    
     total_tasks = ComplianceTask.objects.count()
     completed_tasks = ComplianceTask.objects.filter(status='COMPLETED').count()
-    overdue_tasks = ComplianceTask.objects.filter(status='OVERDUE').count()
     
-    # Group tasks by fund for the reporting table
+    # We define 'Overdue' as any task past due_date that isn't completed
+    today = timezone.now().date()
+    overdue_qs = ComplianceTask.objects.filter(due_date__lt=today).exclude(status='COMPLETED')
+    overdue_count = overdue_qs.count()
+    
     reports_by_fund = []
+    
     for fund in funds:
+        # Calculate fund-specific stats
+        fund_tasks = fund.fund_compliance_tasks.all()
+        f_pending = fund_tasks.filter(due_date__lte=today).exclude(status='COMPLETED').count()
+        f_completed = fund_tasks.filter(status='COMPLETED').count()
+        
         reports_by_fund.append({
             'fund': fund,
-            'pending': fund.compliancetask_set.filter(status__in=['PENDING', 'OVERDUE']).count(),
-            'completed': fund.compliancetask_set.filter(status='COMPLETED').count(),
-            'recent_tasks': fund.compliancetask_set.all().order_by('-due_date')[:5]
+            'jurisdiction': fund.get_jurisdiction_display(),
+            'pending': f_pending,
+            'completed': f_completed,
+            # FLAG: If pending > 0, this fund is technically 'At Risk'
+            'at_risk': f_pending > 0,
+            'recent_tasks': fund_tasks.order_by('-due_date')[:5]
         })
 
     context = {
         'reports_by_fund': reports_by_fund,
         'total_tasks': total_tasks,
         'completion_rate': (completed_tasks / total_tasks * 100) if total_tasks > 0 else 0,
-        'overdue_count': overdue_tasks,
+        'overdue_count': overdue_count,
+        'today': today,
     }
     return render(request, 'compliances/reports.html', context)

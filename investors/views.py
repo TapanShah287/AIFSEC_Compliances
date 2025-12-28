@@ -10,10 +10,12 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework import generics
+from django.db.models import Q, Value
+from django.db.models.functions import Coalesce
 
 # Local Imports
 from .models import Investor, InvestorDocument
-from .forms import InvestorForm, InvestorDocumentForm
+from .forms import InvestorForm, InvestorDocumentForm, BankDetailForm
 from .serializers import InvestorSerializer
 
 # Transaction Model Imports
@@ -28,7 +30,10 @@ from transactions.models import (
 # ==========================================
 
 class InvestorViewSet(viewsets.ModelViewSet):
-    queryset = Investor.objects.all().order_by('name')
+    queryset = Investor.objects.annotate(
+        annotated_commitment=Coalesce(Sum('commitments__amount_committed'), Value(0)),
+        annotated_contribution=Coalesce(Sum('receipts__amount_received'), Value(0)) 
+    ).order_by('name')
     serializer_class = InvestorSerializer
     permission_classes = [IsAuthenticated]
     search_fields = ['name', 'email', 'pan']
@@ -267,9 +272,9 @@ def add_commitment(request, pk):
 # ==========================================
 
 @login_required
-def upload_investor_document(request, pk):
+def investor_upload_doc(request, pk):
     """
-    Handles file uploads to the Investor's Document Vault.
+    Handles uploading KYC documents for a specific investor.
     """
     investor = get_object_or_404(Investor, pk=pk)
     
@@ -278,11 +283,22 @@ def upload_investor_document(request, pk):
         if form.is_valid():
             doc = form.save(commit=False)
             doc.investor = investor
+            
+            # Auto-verification logic: 
+            # If the uploader is a Compliance Officer, auto-verify. 
+            # For now, we leave it as Pending.
+            doc.is_verified = False 
+            
             doc.save()
             messages.success(request, f"{doc.get_doc_type_display()} uploaded successfully.")
             return redirect('investors:portal-detail', pk=investor.pk)
-    
-    return redirect('investors:portal-detail', pk=investor.pk)
+    else:
+        form = InvestorDocumentForm()
+
+    return render(request, 'investors/document_form.html', {
+        'form': form,
+        'investor': investor
+    })
 
 # ==========================================
 # 4. Authoriser Views (HTML Templates)
@@ -303,6 +319,7 @@ def verify_document(request, doc_pk):
 
     doc.is_verified = True
     doc.verified_at = timezone.now()
+    doc.verified_by = request.user
     doc.save()
     
     # Check if all mandatory docs are now verified
@@ -317,11 +334,67 @@ def check_and_update_kyc_status(investor):
     mark investor as VERIFIED.
     """
     mandatory_types = ['PAN', 'BANK_PROOF']
-    if investor.investor_type == 'ENTITY':
+    NON_INDIVIDUAL_TYPES = ['COMPANY', 'LLP', 'TRUST', 'FPI']
+    if investor.investor_type in NON_INDIVIDUAL_TYPES:
         mandatory_types.append('FATCA_CRS')
+        mandatory_types.append('ACCREDITATION_CERT')
+
         
     verified_types = investor.documents.filter(is_verified=True).values_list('doc_type', flat=True)
     
     if all(mtype in verified_types for mtype in mandatory_types):
         investor.kyc_status = 'VERIFIED'
         investor.save()
+
+# investors/views.py
+
+@login_required
+def portal_investor_edit(request, pk):
+    """
+    Handles editing an existing investor profile.
+    """
+    investor = get_object_or_404(Investor, pk=pk)
+    
+    if request.method == 'POST':
+        form = InvestorForm(request.POST, instance=investor)
+        if form.is_valid():
+            form.save()
+            messages.success(request, f"Profile for {investor.name} updated successfully.")
+            return redirect('investors:portal-detail', pk=investor.pk)
+    else:
+        form = InvestorForm(instance=investor)
+    
+    return render(request, 'investors/investor_form.html', {
+        'form': form, 
+        'title': 'Edit Investor Profile',
+        'button_text': 'Update Profile'
+    })
+
+@login_required
+def investor_add_bank(request, pk):
+    """
+    Adds a bank account to a specific investor.
+    """
+    investor = get_object_or_404(Investor, pk=pk)
+    
+    if request.method == 'POST':
+        form = BankDetailForm(request.POST, request.FILES)
+        if form.is_valid():
+            bank_detail = form.save(commit=False)
+            bank_detail.investor = investor
+            
+            # Logic: If this is the first account, make it primary automatically
+            if not investor.bank_details.exists():
+                bank_detail.is_primary = True
+                
+            bank_detail.save()
+            messages.success(request, f"Bank account {bank_detail.account_number} added successfully.")
+            return redirect('investors:portal-detail', pk=investor.pk)
+    else:
+        # Pre-fill account holder name with investor name for convenience
+        form = BankDetailForm(initial={'account_holder_name': investor.name})
+    
+    return render(request, 'investors/bank_form.html', {
+        'form': form,
+        'investor': investor
+    })

@@ -35,10 +35,10 @@
     </div>
     
     <div class="flex gap-3">
-        <a href="{% url 'funds:create-call' fund.pk %}" class="bg-white border border-slate-300 hover:bg-slate-50 text-slate-700 px-4 py-2 rounded-lg text-sm font-medium transition-all shadow-sm flex items-center gap-2">
+        <a href="{% url 'add-call' %}?fund={{ fund.id }}" class="bg-white border border-slate-300 hover:bg-slate-50 text-slate-700 px-4 py-2 rounded-lg text-sm font-medium transition-all shadow-sm flex items-center gap-2">
             <i data-lucide="arrow-down-circle" class="w-4 h-4"></i> Capital Call
         </a>
-        <a href="{% url 'funds:add-receipt' fund.pk %}" class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-all shadow-md shadow-indigo-200 flex items-center gap-2">
+        <a href="{% url 'add-receipt' %}?fund={{ fund.id }}" class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-all shadow-md shadow-indigo-200 flex items-center gap-2">
             <i data-lucide="plus" class="w-4 h-4"></i> Record Receipt
         </a>
     </div>
@@ -48,50 +48,50 @@
     <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
         <div class="flex justify-between items-start mb-4">
             <div>
-                <p class="text-slate-500 text-xs font-semibold uppercase tracking-wider">Target Corpus</p>
-                <h3 class="text-xl font-bold text-slate-900 mt-1">{{ fund.currency.symbol }} {{ fund.target_corpus|intcomma }}</h3>
+                <p class="text-slate-500 text-xs font-semibold uppercase tracking-wider">Total Committed</p>
+                <h3 class="text-xl font-bold text-slate-900 mt-1">₹ {{ total_committed|default:"0"|intcomma }}</h3>
             </div>
             <div class="p-2 bg-slate-50 rounded-lg text-slate-400">
                 <i data-lucide="target" class="w-5 h-5"></i>
             </div>
         </div>
         <div class="w-full bg-slate-100 rounded-full h-1.5 overflow-hidden">
-            <div class="bg-indigo-500 h-1.5 rounded-full" style="width: 45%"></div> 
+            <div class="bg-indigo-500 h-1.5 rounded-full" style="width: {{ fundraising_percent|default:'0' }}%"></div> 
         </div>
-        <p class="text-[10px] text-slate-400 mt-2 text-right">45% Committed</p>
+        <p class="text-[10px] text-slate-400 mt-2 text-right">Target: ₹ {{ fund.corpus|intcomma }}</p>
     </div>
 
     <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
         <div class="flex justify-between items-start mb-4">
             <div>
                 <p class="text-slate-500 text-xs font-semibold uppercase tracking-wider">Capital Called</p>
-                <h3 class="text-xl font-bold text-slate-900 mt-1">{{ fund.currency.symbol }} {{ summary.total_called|default:"0"|intcomma }}</h3>
+                <h3 class="text-xl font-bold text-slate-900 mt-1">₹ {{ total_called|default:"0"|intcomma }}</h3>
             </div>
             <div class="p-2 bg-amber-50 rounded-lg text-amber-500">
                 <i data-lucide="megaphone" class="w-5 h-5"></i>
             </div>
         </div>
-        <p class="text-xs text-slate-500">Called from Investors</p>
+        <p class="text-xs text-slate-500">{{ drawdown_percent|floatformat:1 }}% of Commitment</p>
     </div>
 
     <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
         <div class="flex justify-between items-start mb-4">
             <div>
-                <p class="text-slate-500 text-xs font-semibold uppercase tracking-wider">DPI (Distributions)</p>
-                <h3 class="text-xl font-bold text-slate-900 mt-1">0.15x</h3>
+                <p class="text-slate-500 text-xs font-semibold uppercase tracking-wider">Invested (Cost)</p>
+                <h3 class="text-xl font-bold text-slate-900 mt-1">₹ {{ total_invested|default:"0"|intcomma }}</h3>
             </div>
             <div class="p-2 bg-emerald-50 rounded-lg text-emerald-500">
-                <i data-lucide="pie-chart" class="w-5 h-5"></i>
+                <i data-lucide="briefcase" class="w-5 h-5"></i>
             </div>
         </div>
-        <p class="text-xs text-slate-500">Returned to LPs</p>
+        <p class="text-xs text-slate-500">{{ active_portfolio_count }} Holdings</p>
     </div>
 
     <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm relative overflow-hidden">
         <div>
             <p class="text-slate-500 text-xs font-semibold uppercase tracking-wider">Latest NAV</p>
-            <h3 class="text-xl font-bold text-slate-900 mt-1">104.52</h3>
-            <p class="text-[10px] text-slate-400 mt-1">As on 31 Dec 2024</p>
+            <h3 class="text-xl font-bold text-slate-900 mt-1">{{ latest_nav|default:"10.00" }}</h3>
+            <p class="text-[10px] text-slate-400 mt-1">As of Today</p>
         </div>
         <div class="p-2 absolute top-4 right-4 bg-indigo-50 rounded-lg text-indigo-500">
             <i data-lucide="trending-up" class="w-5 h-5"></i>
@@ -100,9 +100,7 @@
 </div>
 
 <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
-    
     <div class="lg:col-span-2 space-y-8">
-        
         <div class="bg-white rounded-3xl border border-slate-200 p-6 shadow-sm">
             <div class="flex items-center justify-between mb-6">
                 <h3 class="text-lg font-bold text-slate-900">Stewardship & Voting</h3>
@@ -127,81 +125,73 @@
         <div class="space-y-4">
             <div class="flex items-center justify-between">
                 <h3 class="text-lg font-bold text-slate-800">Portfolio Holdings</h3>
-                <a href="{% url 'funds:fund_portfolio' fund.pk %}" class="text-sm text-indigo-600 font-medium hover:underline">View All</a>
+                <a href="{% url 'add-investment' %}?fund={{ fund.id }}" class="text-sm text-indigo-600 font-medium hover:underline">+ Add Investment</a>
             </div>
             <div class="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm">
                 <table class="w-full text-left">
                     <thead class="bg-slate-50 border-b border-slate-200">
                         <tr>
                             <th class="px-6 py-3 text-xs font-semibold text-slate-500 uppercase">Company</th>
-                            <th class="px-6 py-3 text-xs font-semibold text-slate-500 uppercase">Sector</th>
-                            <th class="px-6 py-3 text-xs font-semibold text-slate-500 uppercase text-right">Inv. Cost</th>
-                            <th class="px-6 py-3 text-xs font-semibold text-slate-500 uppercase text-right">Current Value</th>
+                            <th class="px-6 py-3 text-xs font-semibold text-slate-500 uppercase text-right">Quantity</th>
+                            <th class="px-6 py-3 text-xs font-semibold text-slate-500 uppercase text-right">Avg. Cost</th>
+                            <th class="px-6 py-3 text-xs font-semibold text-slate-500 uppercase text-right">Total Cost</th>
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-slate-100">
-                        <tr class="group hover:bg-slate-50 transition-colors cursor-pointer">
+                        {% for holding in portfolio_holdings %}
+                        <tr class="group hover:bg-slate-50 transition-colors">
                             <td class="px-6 py-4">
                                 <div class="flex items-center gap-3">
-                                    <div class="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center text-xs font-bold text-slate-500">Z</div>
-                                    <span class="font-medium text-slate-700 group-hover:text-indigo-600 transition-colors">Zeta Logistics</span>
+                                    <div class="w-8 h-8 rounded-lg bg-slate-100 flex items-center justify-center text-xs font-bold text-slate-500">
+                                        {{ holding.company_name|slice:":1" }}
+                                    </div>
+                                    <span class="font-medium text-slate-700 group-hover:text-indigo-600">{{ holding.company_name }}</span>
                                 </div>
                             </td>
-                            <td class="px-6 py-4 text-sm text-slate-600">Logistics</td>
-                            <td class="px-6 py-4 text-sm text-slate-600 text-right">{{ fund.currency.symbol }} 5.0 Cr</td>
-                            <td class="px-6 py-4 text-sm font-semibold text-emerald-600 text-right">{{ fund.currency.symbol }} 6.2 Cr</td>
+                            <td class="px-6 py-4 text-sm text-slate-600 text-right font-mono">{{ holding.quantity|intcomma }}</td>
+                            <td class="px-6 py-4 text-sm text-slate-600 text-right">₹ {{ holding.avg_cost|floatformat:2 }}</td>
+                            <td class="px-6 py-4 text-sm font-bold text-slate-900 text-right">₹ {{ holding.total_cost|intcomma }}</td>
                         </tr>
+                        {% empty %}
+                        <tr><td colspan="4" class="px-6 py-8 text-center text-slate-400 italic">No investments recorded.</td></tr>
+                        {% endfor %}
                     </tbody>
                 </table>
             </div>
-            <div class="mt-8">
-                <div class="flex items-center justify-between mb-4">
-                    <h3 class="text-lg font-bold text-slate-800">Fund Cap Table</h3>
-                    <span class="text-xs font-medium text-slate-500">Total Units: {{ total_fund_units|floatformat:2|intcomma }}</span>
-                </div>
+        </div>
 
-                <div class="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm">
-                    <table class="w-full text-left">
-                        <thead class="bg-slate-50 border-b border-slate-200">
-                            <tr>
-                                <th class="px-6 py-3 text-xs font-semibold text-slate-500 uppercase">Investor</th>
-                                <th class="px-6 py-3 text-xs font-semibold text-slate-500 uppercase text-right">Capital Contributed</th>
-                                <th class="px-6 py-3 text-xs font-semibold text-slate-500 uppercase text-right">Units Held</th>
-                                <th class="px-6 py-3 text-xs font-semibold text-slate-500 uppercase text-right">Ownership %</th>
-                            </tr>
-                        </thead>
-                        <tbody class="divide-y divide-slate-100">
-                            {% for position in cap_table %}
-                            <tr class="hover:bg-slate-50 transition-colors">
-                                <td class="px-6 py-4">
-                                    <span class="font-medium text-slate-700">{{ position.investor.name }}</span>
-                                </td>
-                                <td class="px-6 py-4 text-sm text-slate-600 text-right">
-                                    {{ fund.currency.symbol }} {{ position.total_capital_contributed|intcomma }}
-                                </td>
-                                <td class="px-6 py-4 text-sm text-slate-600 text-right">
-                                    {{ position.total_units|floatformat:4|intcomma }}
-                                </td>
-                                <td class="px-6 py-4 text-right">
-                                    <span class="px-2 py-1 bg-slate-100 text-slate-700 text-xs font-bold rounded-lg">
-                                        {% if total_fund_units > 0 %}
-                                            {{ position.ownership_percentage|floatformat:2 }}%
-                                        {% else %}
-                                            0.00%
-                                        {% endif %}
-                                    </span>
-                                </td>
-                            </tr>
-                            {% empty %}
-                            <tr>
-                                <td colspan="4" class="px-6 py-8 text-center text-slate-400 italic">
-                                    No units issued yet. Record a receipt to update the Cap Table.
-                                </td>
-                            </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
-                </div>
+        <div class="mt-8 space-y-4">
+            <div class="flex items-center justify-between">
+                <h3 class="text-lg font-bold text-slate-800">Fund Cap Table</h3>
+                <span class="text-xs font-medium text-slate-500">Total Units: {{ total_fund_units|floatformat:2|intcomma }}</span>
+            </div>
+            <div class="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm">
+                <table class="w-full text-left">
+                    <thead class="bg-slate-50 border-b border-slate-200">
+                        <tr>
+                            <th class="px-6 py-3 text-xs font-semibold text-slate-500 uppercase">Investor</th>
+                            <th class="px-6 py-3 text-xs font-semibold text-slate-500 uppercase text-right">Units Held</th>
+                            <th class="px-6 py-3 text-xs font-semibold text-slate-500 uppercase text-right">Ownership %</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-slate-100">
+                        {% for position in cap_table %}
+                        <tr class="hover:bg-slate-50 transition-colors">
+                            <td class="px-6 py-4">
+                                <span class="font-medium text-slate-700">{{ position.investor.name }}</span>
+                            </td>
+                            <td class="px-6 py-4 text-sm text-slate-600 text-right font-mono">
+                                {{ position.total_units|floatformat:4|intcomma }}
+                            </td>
+                            <td class="px-6 py-4 text-right">
+                                <span class="px-2 py-1 bg-slate-100 text-slate-700 text-xs font-bold rounded-lg">
+                                    {{ position.ownership_percentage|floatformat:2 }}%
+                                </span>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
             </div>
         </div>
     </div>
@@ -214,32 +204,28 @@
             <div class="space-y-4">
                 {% for task in upcoming_tasks %}
                 <div class="flex items-start gap-3 pb-4 border-b border-slate-50 last:border-0 last:pb-0">
-                    <div class="w-2 h-2 rounded-full mt-1.5 bg-{{ task.urgency_color|default:'slate' }}-500"></div>
+                    <div class="w-2 h-2 rounded-full mt-1.5 bg-indigo-500"></div>
                     <div>
                         <p class="text-sm font-medium text-slate-800">{{ task.title }}</p>
-                        <p class="text-xs text-slate-400">Due in {{ task.days_remaining }} days</p>
+                        <p class="text-xs text-slate-400">Due: {{ task.due_date|date:"d M" }}</p>
                     </div>
                 </div>
                 {% empty %}
                 <p class="text-xs text-slate-400 italic">No pending tasks.</p>
                 {% endfor %}
             </div>
-            <a href="{% url 'compliances:calendar' %}?fund={{ fund.id }}" 
-               class="block w-full mt-6 py-2 text-center text-xs font-semibold text-indigo-600 bg-indigo-50 rounded-lg hover:bg-indigo-100 transition-colors">
-                View Compliance Calendar
-            </a>
         </div>
 
         <div class="bg-gradient-to-br from-slate-900 to-slate-800 p-6 rounded-2xl text-white shadow-lg">
-            <h3 class="text-sm font-semibold opacity-80 mb-4">Investor Overview</h3>
+            <h3 class="text-sm font-semibold opacity-80 mb-4">Investor Summary</h3>
             <div class="flex justify-between items-end mb-2">
-                <span class="text-3xl font-bold">24</span>
-                <span class="text-sm opacity-70 mb-1">Active LPs</span>
+                <span class="text-3xl font-bold">{{ total_lp_count|default:"0" }}</span>
+                <span class="text-sm opacity-70 mb-1">Subscribed LPs</span>
             </div>
             <div class="w-full bg-white/20 h-1 rounded-full overflow-hidden">
-                <div class="bg-emerald-400 h-1 rounded-full" style="width: 80%"></div>
+                <div class="bg-emerald-400 h-1 rounded-full" style="width: {{ kyc_percent|default:'0' }}%"></div>
             </div>
-            <p class="text-[10px] opacity-60 mt-2">80% KYC Compliant</p>
+            <p class="text-[10px] opacity-60 mt-2 font-bold uppercase">{{ kyc_percent|default:"0" }}% KYC Compliant</p>
         </div>
     </div>
 </div>

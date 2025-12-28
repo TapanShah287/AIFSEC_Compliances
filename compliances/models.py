@@ -2,7 +2,9 @@ from django.db import models
 from django.conf import settings
 from datetime import date
 from django.utils import timezone
+
 from funds.models import Fund
+from manager_entities.models import ManagerEntity
 
 
 class ComplianceMaster(models.Model):
@@ -10,20 +12,45 @@ class ComplianceMaster(models.Model):
     A library of standard regulatory requirements (SEBI/IFSCA).
     """
     JURISDICTION_CHOICES = [('DOMESTIC', 'SEBI'), ('IFSC', 'IFSCA')]
-    
-    title = models.CharField(max_length=255)
-    description = models.TextField()
-    jurisdiction = models.CharField(max_length=10, choices=JURISDICTION_CHOICES)
-    frequency = models.CharField(max_length=20, choices=[
+
+    SCOPE_CHOICES = [
+        ('FUND', 'Fund Level (Specific Scheme)'),
+        ('MANAGER', 'Manager Level (Entity Wide)'),
+    ]
+
+    FREQUENCY_CHOICES = [
         ('MONTHLY', 'Monthly'),
         ('QUARTERLY', 'Quarterly'),
-        ('ANNUAL', 'Annual')
-    ])
-    days_after_period = models.IntegerField(help_text="Days after month/quarter end to set deadline")
+        ('HALF_YEARLY', 'Half Yearly'),
+        ('ANNUALLY', 'Annually'),
+        ('EVENT_BASED', 'Event Based'),
+    ]
+
+    title = models.CharField(max_length=255)
+    description = models.TextField()
+    scope = models.CharField(max_length=20, choices=SCOPE_CHOICES, default='FUND')
+    jurisdiction = models.CharField(max_length=10, choices=JURISDICTION_CHOICES)
+    
+    applicable_categories = models.CharField(
+        max_length=255, 
+        help_text="Comma-separated list of categories (e.g., 'CAT_I,CAT_II'). Leave blank if applying to all.",
+        blank=True
+    )
+
+    frequency = models.CharField(max_length=20, choices=FREQUENCY_CHOICES, default='ANNUALLY')
+    
+    first_due_date = models.DateField(
+        null=True, blank=True, 
+        help_text="Override: If set, the recurring chain starts from this date. If blank, it uses Fund Incorporation Date."
+    )
+   
+    days_after_period = models.IntegerField(
+        default=7,
+        help_text="Days after month/quarter end to set deadline"
+    )
 
     def __str__(self):
-        return f"{self.jurisdiction} - {self.title}"
-
+        return f"{self.title} ({self.jurisdiction} - {self.get_scope_display()})"
 
 class ComplianceTask(models.Model):
     TOPIC_CHOICES = [
@@ -32,7 +59,6 @@ class ComplianceTask(models.Model):
         ('TAX', 'Tax & Audit'),
         ('DOCUMENT', 'Transactional/KYC'),
     ]
-
 
     PRIORITY_CHOICES = [
         ('HIGH', 'Critical / High'),
@@ -53,12 +79,27 @@ class ComplianceTask(models.Model):
         ('TAX', 'Income Tax / TDS'),
     ]
 
+    compliance_master = models.ForeignKey(
+        ComplianceMaster, 
+        on_delete=models.SET_NULL, 
+        null=True, 
+        blank=True, 
+        related_name='tasks'
+    )
+
     title = models.CharField(max_length=255)
     description = models.TextField(blank=True)
     topic = models.CharField(max_length=20, choices=TOPIC_CHOICES, default='REPORTING')
-    
+
+    manager = models.ForeignKey(
+        ManagerEntity, 
+        on_delete=models.CASCADE, 
+        related_name='manager_compliance_tasks',
+        null=True, blank=True  # Null allowed temporarily for migration, but should be filled
+    )
+        
     # Link to a specific fund (optional, as some tasks are firm-level)
-    fund = models.ForeignKey(Fund, on_delete=models.CASCADE, null=True, blank=True, related_name='compliance_tasks')
+    fund = models.ForeignKey(Fund, on_delete=models.CASCADE, null=True, blank=True, related_name='fund_compliance_tasks')
     
     jurisdiction = models.CharField(max_length=10, choices=JURISDICTION_CHOICES, default='DOMESTIC')
     due_date = models.DateField()
@@ -73,6 +114,13 @@ class ComplianceTask(models.Model):
 
     class Meta:
         ordering = ['due_date']
+        # Optional: Prevent duplicate tasks for the same rule/fund/date
+        # unique_together = ('compliance_master', 'fund', 'due_date')
+    
+    def clean(self):
+        """Validate that Fund is present if the Master Rule says it's a FUND scope."""
+        if self.compliance_master and self.compliance_master.scope == 'FUND' and not self.fund:
+            raise ValidationError("Fund is required for Fund-level compliance tasks.")
 
     def __str__(self):
         return f"{self.title} ({self.due_date})"

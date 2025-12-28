@@ -1,173 +1,300 @@
 {% extends 'base.html' %}
 {% load humanize %}
 
-{% block title %}{{ investor.name }} - Profile{% endblock %}
+{% block title %}{{ investor.name }} | Investor Profile{% endblock %}
 
 {% block content %}
-<div class="mb-6">
+<div class="mb-6 flex items-center justify-between">
     <a href="{% url 'investors:portal-list' %}" class="flex items-center text-sm text-slate-500 hover:text-slate-800 transition-colors">
         <i data-lucide="arrow-left" class="w-4 h-4 mr-1"></i> Back to Registry
     </a>
+    <div class="flex gap-2">
+        <a href="#" class="bg-white border border-slate-300 text-slate-700 px-4 py-2 rounded-xl text-sm font-bold flex items-center gap-2 hover:bg-slate-50 transition-all">
+            <i data-lucide="printer" class="w-4 h-4"></i> Statement
+        </a>
+        <a href="{% url 'investors:portal-edit' investor.pk %}" class="bg-indigo-600 text-white px-4 py-2 rounded-xl text-sm font-bold flex items-center gap-2 hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-100">
+            <i data-lucide="edit-3" class="w-4 h-4"></i> Edit Profile
+        </a>
+    </div>
 </div>
 
-<div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-8 mb-8 relative overflow-hidden">
-    <div class="absolute top-0 right-0 p-8 opacity-10">
-        <i data-lucide="briefcase" class="w-32 h-32 text-indigo-900"></i>
+<div class="bg-white rounded-3xl border border-slate-200 shadow-sm p-8 mb-8 relative overflow-hidden">
+    <div class="absolute top-0 right-0 p-8 opacity-5">
+        <i data-lucide="briefcase" class="w-48 h-48 text-indigo-900"></i>
     </div>
     
-    <div class="relative z-10 flex flex-col md:flex-row justify-between gap-6">
-        <div class="flex items-start gap-5">
-            <div class="w-20 h-20 rounded-full bg-indigo-100 text-indigo-600 flex items-center justify-center text-2xl font-bold border-4 border-white shadow-lg">
+    <div class="relative z-10 flex flex-col md:flex-row gap-8">
+        <div class="flex-shrink-0">
+            <div class="w-24 h-24 rounded-full bg-slate-100 text-slate-600 flex items-center justify-center text-3xl font-black border-4 border-white shadow-xl ring-1 ring-slate-100">
                 {{ investor.name|slice:":2"|upper }}
             </div>
-            <div>
-                <h1 class="text-2xl font-bold text-slate-900">{{ investor.name }}</h1>
-                <div class="flex flex-wrap gap-2 mt-2">
-                    <span class="px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wide bg-slate-100 text-slate-600 border border-slate-200">
-                        {{ investor.get_investor_type_display }}
+            <div class="mt-4 text-center">
+                <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wider bg-slate-100 text-slate-600">
+                    ID: #{{ investor.id|stringformat:"04d" }}
+                </span>
+            </div>
+        </div>
+
+        <div class="flex-grow">
+            <div class="flex flex-col md:flex-row md:items-start justify-between gap-4">
+                <div>
+                    <h1 class="text-3xl font-black text-slate-900 tracking-tight">{{ investor.name }}</h1>
+                    <div class="flex flex-wrap items-center gap-3 mt-3 text-sm text-slate-500 font-medium">
+                        <span class="flex items-center gap-1.5"><i data-lucide="mail" class="w-4 h-4 text-slate-400"></i> {{ investor.email }}</span>
+                        <span class="w-1 h-1 bg-slate-300 rounded-full"></span>
+                        <span class="flex items-center gap-1.5"><i data-lucide="phone" class="w-4 h-4 text-slate-400"></i> {{ investor.phone|default:"-- --" }}</span>
+                        <span class="w-1 h-1 bg-slate-300 rounded-full"></span>
+                        <span class="flex items-center gap-1.5"><i data-lucide="map-pin" class="w-4 h-4 text-slate-400"></i> {{ investor.city|default:"Location N/A" }}</span>
+                    </div>
+                </div>
+                
+                <div class="text-right hidden md:block">
+                    <p class="text-[10px] uppercase font-bold text-slate-400 tracking-wider">Total Commitment</p>
+                    <p class="text-2xl font-black text-slate-900">₹ {{ investor.total_committed|intcomma }}</p>
+                </div>
+            </div>
+
+            <div class="flex flex-wrap gap-3 mt-6">
+                <div class="px-3 py-1.5 rounded-lg border {% if investor.investor_type in 'COMPANY,LLP,FPI' %}bg-purple-50 border-purple-100 text-purple-700{% else %}bg-blue-50 border-blue-100 text-blue-700{% endif %}">
+                    <span class="block text-[9px] uppercase font-bold opacity-60 mb-0.5">Entity Type</span>
+                    <span class="text-xs font-bold">{{ investor.get_investor_type_display }}</span>
+                </div>
+
+                <div class="px-3 py-1.5 rounded-lg border bg-slate-50 border-slate-100 text-slate-700">
+                    <span class="block text-[9px] uppercase font-bold opacity-60 mb-0.5">Tax PAN</span>
+                    <span class="text-xs font-mono font-bold">{{ investor.pan }}</span>
+                </div>
+
+                <div class="px-3 py-1.5 rounded-lg border {% if investor.kyc_status == 'VERIFIED' %}bg-emerald-50 border-emerald-100 text-emerald-700{% elif investor.kyc_status == 'REJECTED' %}bg-rose-50 border-rose-100 text-rose-700{% else %}bg-amber-50 border-amber-100 text-amber-700{% endif %}">
+                    <span class="block text-[9px] uppercase font-bold opacity-60 mb-0.5">KYC Status</span>
+                    <span class="text-xs font-bold flex items-center gap-1">
+                        {{ investor.get_kyc_status_display }}
+                        {% if investor.kyc_status == 'VERIFIED' %}
+                            <i data-lucide="check-circle-2" class="w-3.5 h-3.5"></i>
+                        {% endif %}
                     </span>
-                    {% if investor.kyc_status == 'VERIFIED' %}
-                    <span class="px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wide bg-emerald-100 text-emerald-700 border border-emerald-200 flex items-center gap-1">
-                        <i data-lucide="check-circle" class="w-3 h-3"></i> KYC Verified
-                    </span>
-                    {% elif investor.kyc_status == 'PENDING' %}
-                    <span class="px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wide bg-amber-100 text-amber-700 border border-amber-200 flex items-center gap-1">
-                        <i data-lucide="clock" class="w-3 h-3"></i> KYC Pending
-                    </span>
+                </div>
+                
+                <div class="px-3 py-1.5 rounded-lg border bg-indigo-50 border-indigo-100 text-indigo-700">
+                    <span class="block text-[9px] uppercase font-bold opacity-60 mb-0.5">Accreditation</span>
+                    <span class="text-xs font-bold">{{ investor.get_accreditation_status_display|default:"N/A" }}</span>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+    <div class="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm flex flex-col justify-between h-full">
+        <div>
+            <div class="flex items-center gap-2 mb-2">
+                <div class="p-2 bg-indigo-50 rounded-lg text-indigo-600"><i data-lucide="wallet" class="w-4 h-4"></i></div>
+                <p class="text-xs font-bold text-slate-500 uppercase tracking-wider">Total Commitment</p>
+            </div>
+            <h3 class="text-2xl font-black text-slate-900">₹ {{ investor.total_committed|intcomma }}</h3>
+        </div>
+        <p class="text-[10px] text-slate-400 mt-4 font-medium">Signed capital across all schemes</p>
+    </div>
+
+    <div class="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm flex flex-col justify-between h-full">
+        <div>
+            <div class="flex items-center gap-2 mb-2">
+                <div class="p-2 bg-emerald-50 rounded-lg text-emerald-600"><i data-lucide="arrow-down-circle" class="w-4 h-4"></i></div>
+                <p class="text-xs font-bold text-slate-500 uppercase tracking-wider">Contributed Capital</p>
+            </div>
+            <h3 class="text-2xl font-black text-slate-900">₹ {{ investor.total_contributed|intcomma }}</h3>
+        </div>
+        <div class="mt-4">
+            <div class="flex justify-between text-[10px] font-bold text-slate-500 mb-1">
+                <span>Called</span>
+                <span>Waitlist</span>
+            </div>
+            <div class="w-full bg-slate-100 h-1.5 rounded-full overflow-hidden">
+                <div class="bg-emerald-500 h-full" style="width: 45%"></div> 
+            </div>
+        </div>
+    </div>
+
+    <div class="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm flex flex-col justify-between h-full">
+        <div>
+            <div class="flex items-center gap-2 mb-2">
+                <div class="p-2 bg-amber-50 rounded-lg text-amber-600"><i data-lucide="hourglass" class="w-4 h-4"></i></div>
+                <p class="text-xs font-bold text-slate-500 uppercase tracking-wider">Uncalled Capital</p>
+            </div>
+            <h3 class="text-2xl font-black text-slate-900">₹ {{ investor.uncalled_commitment|intcomma }}</h3>
+        </div>
+        <p class="text-[10px] text-amber-600 font-bold mt-4 uppercase tracking-tight">Available for Drawdown</p>
+    </div>
+</div>
+
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-8">
+    
+    <div class="lg:col-span-2 space-y-8">
+        <section class="bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden">
+            <div class="px-6 py-5 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
+                <h3 class="font-bold text-slate-900 text-sm flex items-center gap-2">
+                    <i data-lucide="layers" class="w-4 h-4 text-slate-400"></i> Active Fund Subscriptions
+                </h3>
+                <a href="{% url 'add-commitment' %}?investor={{ investor.id }}" 
+                   class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-2 shadow-lg shadow-indigo-100 transition-all">
+                    <i data-lucide="plus" class="w-3.5 h-3.5"></i> New Subscription
+                </a>
+            </div>
+
+            <div class="overflow-x-auto">
+                <table class="w-full text-left">
+                    <thead class="bg-slate-50 text-[10px] uppercase font-black text-slate-400 tracking-wider">
+                        <tr>
+                            <th class="px-6 py-3">Fund Scheme</th>
+                            <th class="px-6 py-3">Subscription Date</th>
+                            <th class="px-6 py-3 text-right">Committed Amount</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-slate-100 text-sm">
+                        {% for commitment in investor.commitments.all %}
+                        <tr class="hover:bg-slate-50/50 transition-colors">
+                            <td class="px-6 py-4 font-bold text-slate-800">{{ commitment.fund.name }}</td>
+                            <td class="px-6 py-4 text-slate-500 text-xs">{{ commitment.commitment_date|date:"d M Y" }}</td>
+                            <td class="px-6 py-4 text-right font-mono font-bold text-slate-900">₹ {{ commitment.amount_committed|intcomma }}</td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="3" class="px-6 py-12 text-center">
+                                <div class="flex flex-col items-center">
+                                    <i data-lucide="info" class="w-8 h-8 text-slate-200 mb-2"></i>
+                                    <p class="text-xs text-slate-400 italic">No active subscriptions found.</p>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                    {% if investor.commitments.exists %}
+                    <tfoot class="bg-slate-50/50 border-t border-slate-100">
+                        <tr>
+                            <td colspan="2" class="px-6 py-3 text-right text-[10px] uppercase font-black text-slate-400">Total AUM</td>
+                            <td class="px-6 py-3 text-right font-mono font-black text-indigo-600">₹ {{ investor.total_committed|intcomma }}</td>
+                        </tr>
+                    </tfoot>
                     {% endif %}
-                </div>
-                <div class="mt-4 flex flex-col gap-1 text-sm text-slate-500">
-                    <span class="flex items-center gap-2"><i data-lucide="mail" class="w-3 h-3"></i> {{ investor.email }}</span>
-                    <span class="flex items-center gap-2"><i data-lucide="credit-card" class="w-3 h-3"></i> PAN: <span class="font-mono text-slate-700">{{ investor.pan }}</span></span>
-                </div>
+                </table>
             </div>
-        </div>
+        </section>
 
-        <div class="flex gap-4">
-            <div class="bg-slate-50 p-4 rounded-xl border border-slate-100 min-w-[140px]">
-                <p class="text-[10px] uppercase font-bold text-slate-400 tracking-wider">Total Committed</p>
-                <p class="text-lg font-bold text-slate-900 mt-1">₹ {{ investor.total_committed|intcomma }}</p>
-            </div>
-            <div class="bg-slate-50 p-4 rounded-xl border border-slate-100 min-w-[140px]">
-                <p class="text-[10px] uppercase font-bold text-slate-400 tracking-wider">Uncalled Capital</p>
-                <p class="text-lg font-bold text-indigo-600 mt-1">₹ {{ investor.uncalled_commitment|intcomma }}</p>
-            </div>
-        </div>
-    </div>
-</div>
-
-<div class="mb-6 border-b border-slate-200" x-data="{ tab: 'overview' }">
-    <nav class="flex gap-8" aria-label="Tabs">
-        <a href="#" class="border-b-2 border-indigo-600 py-4 px-1 text-sm font-medium text-indigo-600" aria-current="page">Overview & Documents</a>
-        <a href="#" class="border-b-2 border-transparent py-4 px-1 text-sm font-medium text-slate-500 hover:text-slate-700 hover:border-slate-300 transition-all">Transaction Ledger</a>
-        <a href="#" class="border-b-2 border-transparent py-4 px-1 text-sm font-medium text-slate-500 hover:text-slate-700 hover:border-slate-300 transition-all">Communication Log</a>
-    </nav>
-</div>
-
-<div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
-    <div class="space-y-6">
-        <div class="bg-white rounded-xl border border-slate-200 shadow-sm p-6">
-            <h3 class="font-bold text-slate-900 text-sm mb-4">Regulatory Data (2025)</h3>
-            
-            <div class="space-y-4">
-                <div>
-                    <p class="text-xs text-slate-400">Accreditation Status</p>
-                    <p class="text-sm font-medium text-slate-700">{{ investor.get_accreditation_status_display }}</p>
-                </div>
-                <div>
-                    <p class="text-xs text-slate-400">Accreditation Expiry</p>
-                    <p class="text-sm font-medium text-slate-700">{{ investor.accreditation_expiry|default:"--" }}</p>
-                </div>
-                <div class="pt-2 border-t border-slate-100"></div>
-                <div>
-                    <p class="text-xs text-slate-400">Demat DP ID</p>
-                    <p class="text-sm font-mono text-slate-700">{{ investor.dp_id|default:"Not Provided" }}</p>
-                </div>
-                <div>
-                    <p class="text-xs text-slate-400">Client ID</p>
-                    <p class="text-sm font-mono text-slate-700">{{ investor.demat_account_no|default:"Not Provided" }}</p>
-                </div>
-            </div>
-            
-            <div class="mt-6 pt-4 border-t border-slate-100">
-                <a href="{% url 'investor-kyc' investor.pk %}" class="w-full flex items-center justify-center gap-2 py-2 bg-slate-50 text-slate-700 hover:bg-slate-100 rounded-lg text-xs font-semibold border border-slate-200 transition-colors">
-                    <i data-lucide="edit-2" class="w-3 h-3"></i> Edit Regulatory Info
+        <section class="bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden">
+            <div class="px-6 py-5 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
+                <h3 class="font-bold text-slate-900 text-sm flex items-center gap-2">
+                    <i data-lucide="landmark" class="w-4 h-4 text-slate-400"></i> Registered Bank Accounts
+                </h3>
+                <a href="{% url 'investors:portal-add-bank' investor.pk %}" class="text-[10px] font-bold bg-white border border-slate-200 px-3 py-1.5 rounded-lg hover:border-indigo-300 hover:text-indigo-600 transition-all">
+                    + Add Account
                 </a>
             </div>
-        </div>
-    </div>
-
-    <div class="lg:col-span-2">
-        <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
-            <div class="p-6 border-b border-slate-100 flex justify-between items-center">
-                <h3 class="font-bold text-slate-900 text-sm">Document Vault</h3>
-                <button class="text-xs font-medium text-indigo-600 hover:bg-indigo-50 px-3 py-1.5 rounded-lg transition-colors border border-transparent hover:border-indigo-100">
-                    + Upload Document
-                </button>
-            </div>
             
-            {% if investor.documents.all %}
-            <table class="w-full text-left">
-                <thead class="bg-slate-50 border-b border-slate-100">
-                    <tr>
-                        <th class="px-6 py-3 text-xs font-semibold text-slate-500 uppercase">Document Type</th>
-                        <th class="px-6 py-3 text-xs font-semibold text-slate-500 uppercase">Uploaded</th>
-                        <th class="px-6 py-3 text-xs font-semibold text-slate-500 uppercase text-center">Status</th>
-                        <th class="px-6 py-3 text-xs font-semibold text-slate-500 uppercase text-right">Action</th>
-                    </tr>
-                </thead>
-                <tbody class="divide-y divide-slate-100">
-                    {% for doc in investor.documents.all %}
-                    <tr class="hover:bg-slate-50/50 transition-colors">
-                        <td class="px-6 py-3 text-sm font-medium text-slate-700">
-                            <div class="flex items-center gap-2">
-                                <i data-lucide="file-text" class="w-4 h-4 text-slate-400"></i>
-                                {{ doc.get_doc_type_display }}
-                            </div>
-                        </td>
-                        <td class="px-6 py-3 text-sm text-slate-500">{{ doc.uploaded_at|date:"M d, Y" }}</td>
-                        <td class="px-6 py-3 text-center">
-                            {% if doc.is_verified %}
-                                <span class="px-2 py-0.5 bg-emerald-100 text-emerald-700 text-[10px] font-bold uppercase rounded-full">Verified</span>
-                            {% else %}
-                                <span class="px-2 py-0.5 bg-slate-100 text-slate-500 text-[10px] font-bold uppercase rounded-full">Pending</span>
-                            {% endif %}
-                        </td>
-                        <td class="px-6 py-3 text-right">
-                            <a href="{{ doc.file.url }}" target="_blank" class="text-indigo-600 hover:text-indigo-800 text-xs font-semibold">Download</a>
-                        </td>
-                        <td class="px-6 py-3 text-right">
-                            {% if not doc.is_verified and is_compliance_user %}
-                                <a href="{% url 'investors:verify_doc' doc.pk %}" class="text-emerald-600 hover:text-emerald-800 text-xs font-bold mr-3">
-                                    Verify Now
-                                </a>
-                            {% endif %}
-                            <a href="{{ doc.file.url }}" target="_blank" class="text-indigo-600 hover:text-indigo-800 text-xs font-semibold">
-                                Download
-                            </a>
-                        </td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
+            {% if investor.bank_details.exists %}
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 p-6">
+                {% for bank in investor.bank_details.all %}
+                <div class="p-4 rounded-2xl border {% if bank.is_primary %}border-indigo-200 bg-indigo-50/30{% else %}border-slate-200 bg-white{% endif %} relative group">
+                    {% if bank.is_primary %}
+                    <span class="absolute top-3 right-3 px-2 py-0.5 bg-indigo-100 text-indigo-700 text-[9px] font-black uppercase rounded">Primary</span>
+                    {% endif %}
+                    <p class="text-xs font-bold text-slate-400 uppercase tracking-widest mb-2">{{ bank.bank_name }}</p>
+                    <p class="font-mono font-bold text-slate-800 text-lg mb-1">{{ bank.account_number }}</p>
+                    <p class="text-xs text-slate-500 font-medium">IFSC: <span class="text-slate-900">{{ bank.ifsc_code }}</span></p>
+                    <p class="text-[10px] text-slate-400 mt-2">{{ bank.account_holder_name }}</p>
+                </div>
+                {% endfor %}
+            </div>
             {% else %}
-            <div class="p-8 text-center">
-                <div class="w-12 h-12 bg-slate-50 rounded-full flex items-center justify-center mx-auto mb-3">
-                    <i data-lucide="file" class="w-6 h-6 text-slate-300"></i>
-                </div>
-                <p class="text-sm text-slate-500">No documents uploaded yet.</p>
-            </div>
+            <div class="p-8 text-center text-sm text-slate-400 italic">No bank accounts registered.</div>
             {% endif %}
-        </div>
-        
-        <div class="mt-8 bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
-             <div class="p-6 border-b border-slate-100 flex justify-between items-center">
-                <h3 class="font-bold text-slate-900 text-sm">Commitment History</h3>
-                <a href="{% url 'investors:add_commitment' investor.pk %}" class="text-xs font-medium text-indigo-600 border border-indigo-200 hover:bg-indigo-50 px-3 py-1.5 rounded-lg transition-colors">
-                    Add Commitment
+        </section>
+
+        <section class="bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden">
+            <div class="px-6 py-5 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
+                <h3 class="font-bold text-slate-900 text-sm flex items-center gap-2">
+                    <i data-lucide="file-check" class="w-4 h-4 text-slate-400"></i> KYC & Compliance Documents
+                </h3>
+                <a href="{% url 'investors:portal-upload-doc' investor.pk %}" class="text-[10px] font-bold bg-white border border-slate-200 px-3 py-1.5 rounded-lg hover:border-indigo-300 hover:text-indigo-600 transition-all">
+                    + Upload Doc
                 </a>
             </div>
-             </div>
+            
+            <div class="overflow-x-auto">
+                <table class="w-full text-left">
+                    <thead class="bg-slate-50 text-[10px] uppercase font-black text-slate-400 tracking-wider">
+                        <tr>
+                            <th class="px-6 py-3">Type</th>
+                            <th class="px-6 py-3">Uploaded</th>
+                            <th class="px-6 py-3">Status</th>
+                            <th class="px-6 py-3 text-right">Action</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-slate-100 text-sm">
+                        {% for doc in investor.documents.all %}
+                        <tr class="group hover:bg-slate-50/50 transition-colors">
+                            <td class="px-6 py-4 font-bold text-slate-700">{{ doc.get_doc_type_display }}</td>
+                            <td class="px-6 py-4 text-slate-500 text-xs">{{ doc.uploaded_at|date:"d M Y" }}</td>
+                            <td class="px-6 py-4">
+                                {% if doc.is_verified %}
+                                <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-emerald-50 text-emerald-700 text-xs font-bold border border-emerald-100">Verified</span>
+                                {% else %}
+                                <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-amber-50 text-amber-700 text-xs font-bold border border-amber-100">Pending</span>
+                                {% endif %}
+                            </td>
+                            <td class="px-6 py-4 text-right">
+                                <a href="{{ doc.file.url }}" target="_blank" class="text-[10px] font-bold text-indigo-600 hover:underline uppercase">View</a>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr><td colspan="4" class="px-6 py-8 text-center text-slate-400 text-xs italic">No documents found.</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </section>
+    </div>
+
+    <div class="space-y-8">
+        <section class="bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden">
+            <div class="px-6 py-5 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
+                <h3 class="font-bold text-slate-900 text-sm flex items-center gap-2">
+                    <i data-lucide="users" class="w-4 h-4 text-slate-400"></i> Nominees
+                </h3>
+            </div>
+            <div class="p-6 space-y-4">
+                {% for nominee in investor.nominees.all %}
+                <div class="flex items-center justify-between p-3 rounded-xl border border-slate-100 bg-slate-50/50">
+                    <div>
+                        <p class="font-bold text-slate-800 text-sm">{{ nominee.name }}</p>
+                        <p class="text-[10px] text-slate-500 uppercase font-bold">{{ nominee.relation }}</p>
+                    </div>
+                    <div class="text-right">
+                        <span class="block text-lg font-black text-slate-700">{{ nominee.allocation_percentage|floatformat:0 }}%</span>
+                    </div>
+                </div>
+                {% empty %}
+                <p class="text-xs text-slate-400 italic text-center">No nominees added.</p>
+                {% endfor %}
+            </div>
+        </section>
+
+        <section class="bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden">
+            <div class="px-6 py-5 border-b border-slate-100 bg-slate-50/50">
+                <h3 class="font-bold text-slate-900 text-sm">Recent Activity</h3>
+            </div>
+            <div class="p-6">
+                <ol class="relative border-l border-slate-200 ml-2">                  
+                    <li class="mb-6 ml-6">
+                        <span class="absolute flex items-center justify-center w-5 h-5 bg-indigo-100 rounded-full -left-2.5 ring-4 ring-white">
+                            <i data-lucide="user-plus" class="w-3 h-3 text-indigo-600"></i>
+                        </span>
+                        <h3 class="text-xs font-bold text-slate-900">Investor Onboarded</h3>
+                        <p class="mb-1 text-[10px] font-normal text-slate-500">Profile created by Admin</p>
+                        <time class="block text-[9px] font-normal leading-none text-slate-400">{{ investor.created_at|date:"d M Y" }}</time>
+                    </li>
+                </ol>
+            </div>
+        </section>
     </div>
 </div>
 {% endblock %}

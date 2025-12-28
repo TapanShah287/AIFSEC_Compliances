@@ -55,7 +55,7 @@ class Investor(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
 
     # Risk Profiling (2025 Transparency Requirement)
-    risk_appetite = models.CharField(max_length=50, choices=[('LOW', 'Low'), ('MEDIUM', 'Medium'), ('HIGH', 'High')], default='MEDIUM')
+    risk_appetite = models.CharField(max_length=50, choices=[('LOW', 'Low'), ('MEDIUM', 'Medium'), ('HIGH', 'High')], default='MEDIUM', blank=True)
 
     def __str__(self):
         return self.name
@@ -97,7 +97,36 @@ class InvestorDocument(models.Model):
     file = models.FileField(upload_to=investor_doc_path)
     uploaded_at = models.DateTimeField(auto_now_add=True)
     is_verified = models.BooleanField(default=False)
+    verified_by = models.ForeignKey('auth.User', on_delete=models.SET_NULL, null=True, blank=True)
+    verified_at = models.DateTimeField(null=True, blank=True)
     notes = models.TextField(blank=True, null=True)
 
     def __str__(self):
         return f"{self.get_doc_type_display()} - {self.investor.name}"
+
+class InvestorBankDetail(models.Model):
+    """
+    Critical for Distributions. 
+    SEBI requires payout to the account from which funds were received.
+    """
+    investor = models.ForeignKey(Investor, on_delete=models.CASCADE, related_name='bank_details')
+    bank_name = models.CharField(max_length=100)
+    account_number = models.CharField(max_length=50)
+    ifsc_code = models.CharField(max_length=11)
+    swift_code = models.CharField(max_length=20, blank=True, null=True, help_text="Required for FPI/NRI")
+    account_holder_name = models.CharField(max_length=255)
+    is_primary = models.BooleanField(default=False)
+    
+    # Proof document link (reusing your doc model logic)
+    verification_doc = models.ForeignKey('InvestorDocument', on_delete=models.SET_NULL, null=True, blank=True)
+
+class Nominee(models.Model):
+    """
+    Mandatory for Individual/HUF investors under SEBI AIF Regulations.
+    """
+    investor = models.ForeignKey(Investor, on_delete=models.CASCADE, related_name='nominees')
+    name = models.CharField(max_length=255)
+    relation = models.CharField(max_length=50)
+    dob = models.DateField(help_text="Required to determine if minor")
+    allocation_percentage = models.DecimalField(max_digits=5, decimal_places=2, default=100.00)
+    guardian_name = models.CharField(max_length=255, blank=True, null=True, help_text="If nominee is a minor")

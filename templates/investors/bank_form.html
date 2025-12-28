@@ -1,0 +1,71 @@
+{% extends 'base.html' %}
+
+{% block title %}Add Bank Details | {{ investor.name }}{% endblock %}
+
+{% block content %}
+<div class="max-w-lg mx-auto mt-10">
+    <div class="bg-white p-8 rounded-3xl border border-slate-200 shadow-xl">
+        <div class="mb-6 text-center">
+            <div class="w-12 h-12 bg-indigo-50 text-indigo-600 rounded-full flex items-center justify-center mx-auto mb-3">
+                <i data-lucide="landmark" class="w-6 h-6"></i>
+            </div>
+            <h2 class="text-xl font-black text-slate-900">Add Bank Account</h2>
+            <p class="text-sm text-slate-500 mt-1">For distributions to <strong>{{ investor.name }}</strong></p>
+        </div>
+
+        <form method="post" enctype="multipart/form-data" class="space-y-4">
+            {% csrf_token %}
+            
+            <div>
+                <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Beneficiary Name</label>
+                {{ form.account_holder_name }}
+            </div>
+
+            <div class="grid grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Bank Name</label>
+                    {{ form.bank_name }}
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-500 uppercase mb-1">IFSC Code</label>
+                    {{ form.ifsc_code }}
+                </div>
+            </div>
+
+            <div>
+                <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Account Number</label>
+                {{ form.account_number }}
+            </div>
+            
+            <div class="pt-2">
+                <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Upload Cancelled Cheque (Proof)</label>
+                {{ form.verification_doc }}
+                <p class="text-[10px] text-slate-400 mt-1">Required for penny-drop verification.</p>
+            </div>
+
+            <div class="flex items-center gap-3 p-3 bg-slate-50 rounded-xl border border-slate-100 mt-2">
+                {{ form.is_primary }}
+                <label class="text-xs font-bold text-slate-700">Mark as Primary Account for Payouts</label>
+            </div>
+
+            <div class="pt-6 flex gap-3">
+                <a href="{% url 'investors:portal-detail' investor.pk %}" class="flex-1 py-3 text-center text-slate-600 font-bold hover:bg-slate-50 rounded-xl transition-all text-sm">Cancel</a>
+                <button type="submit" class="flex-1 py-3 bg-indigo-600 text-white font-bold rounded-xl hover:bg-indigo-700 shadow-lg shadow-indigo-200 transition-all text-sm">
+                    Save Account
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+    // Style the inputs
+    document.addEventListener('DOMContentLoaded', function() {
+        const inputs = document.querySelectorAll('input[type="text"], input[type="file"]');
+        inputs.forEach(input => {
+            input.classList.add('w-full', 'p-2.5', 'bg-slate-50', 'border', 'border-slate-200', 'rounded-xl', 'text-sm', 'font-bold', 'text-slate-700', 'focus:ring-2', 'focus:ring-indigo-500', 'outline-none');
+        });
+        document.querySelector('input[type="checkbox"]').classList.add('w-5', 'h-5', 'text-indigo-600', 'rounded');
+    });
+</script>
+{% endblock %}

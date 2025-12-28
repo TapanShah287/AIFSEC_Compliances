@@ -3,6 +3,33 @@
 {% block title %}Create Manual Task{% endblock %}
 
 {% block content %}
+
+
+{% if form.errors %}
+    <div class="bg-red-50 border-l-4 border-red-500 p-4 mb-4">
+        <div class="flex">
+            <div class="flex-shrink-0">
+                <i data-lucide="alert-circle" class="h-5 w-5 text-red-400"></i>
+            </div>
+            <div class="ml-3">
+                <p class="text-sm text-red-700 font-bold">
+                    Please correct the following errors:
+                </p>
+                <ul class="mt-1 text-sm text-red-600 list-disc list-inside">
+                    {% for field in form %}
+                        {% for error in field.errors %}
+                            <li><strong>{{ field.label }}:</strong> {{ error }}</li>
+                        {% endfor %}
+                    {% endfor %}
+                    {% for error in form.non_field_errors %}
+                        <li>{{ error }}</li>
+                    {% endfor %}
+                </ul>
+            </div>
+        </div>
+    </div>
+{% endif %}
+
 <div class="max-w-3xl mx-auto py-8">
     <div class="mb-8">
         <a href="{% url 'compliances:task-list' %}" class="text-sm text-indigo-600 font-medium flex items-center gap-1 mb-2 hover:underline">
@@ -47,6 +74,11 @@
                 <div>
                     <label class="block text-xs font-bold text-slate-500 uppercase mb-2">Assign To</label>
                     {{ form.assigned_to }}
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-slate-500 uppercase mb-2">Status</label>
+                    {{ form.status }}
                 </div>
 
                 <div class="md:col-span-2">

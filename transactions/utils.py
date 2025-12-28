@@ -8,21 +8,21 @@ def calculate_fifo_cost_basis(redemption):
     # Import inside function to avoid circular import with models.py
     from .models import PurchaseTransaction, RedemptionTransaction
 
-    # 1. Get all purchases for this specific stock/fund combo, ordered by date
+    # 1. Get all purchases, ordered by date
     purchases = PurchaseTransaction.objects.filter(
         fund=redemption.fund,
         investee_company=redemption.investee_company,
-        share_capital=redemption.share_capital,
-        trade_date__lte=redemption.trade_date
-    ).order_by('trade_date', 'id')
+        share_class=redemption.share_class, # FIXED: Was share_capital
+        transaction_date__lte=redemption.transaction_date # FIXED: Was trade_date
+    ).order_by('transaction_date', 'id')
 
-    # 2. Get all PRIOR redemptions to see what has already been sold
+    # 2. Get all PRIOR redemptions
     prior_redemptions = RedemptionTransaction.objects.filter(
         fund=redemption.fund,
         investee_company=redemption.investee_company,
-        share_capital=redemption.share_capital,
-        trade_date__lte=redemption.trade_date
-    ).exclude(id=redemption.id).order_by('trade_date', 'id')
+        share_class=redemption.share_class, # FIXED
+        transaction_date__lte=redemption.transaction_date # FIXED
+    ).exclude(id=redemption.id).order_by('transaction_date', 'id')
 
     # Calculate total quantity sold before this transaction
     total_sold_previously = sum(r.quantity for r in prior_redemptions)

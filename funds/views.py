@@ -2,6 +2,7 @@ from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.db.models import Sum
+from django.utils import timezone
 from decimal import Decimal
 from django.utils.text import slugify
 
@@ -108,7 +109,7 @@ def portal_funds_list(request):
     ).order_by('-date_of_inception')
 
     for f in funds:
-        f.stats_committed = f.total_commitments
+        f.stats_committed = f.total_committed
 
     return render(request, "funds/funds_list.html", {
         "funds": funds,
@@ -148,76 +149,42 @@ def fund_add(request):
 
 @login_required
 def fund_detail(request, pk):
-    """
-    Comprehensive view for Fund Overview.
-    Calculates Cap Table, Analytics Summary, and Upcoming Compliance.
-    """
     fund = get_object_or_404(Fund, pk=pk)
-
-    # 1. CAP TABLE CALCULATIONS
-    # Fetch all holdings for this fund, optimized with select_related for investor names
-    cap_table = fund.cap_table.all().select_related('investor').order_by('-total_units')
     
-    # Calculate the total units across the whole fund for ownership % logic
-    total_fund_units = cap_table.aggregate(total=Sum('total_units'))['total'] or Decimal('0.0000')
-
-    # 2. ANALYTICS SERVICE
-    # Initialize your analytics service to get called capital, DPI, etc.
-    analytics = FundAnalyticsService(fund)
-    summary = analytics.get_fund_summary()
-
-    # 3. COMPLIANCE TASKS LOGIC
-    upcoming_tasks = []
-    try:
-        # We import inside the function or locally to prevent circular dependencies
-        from compliances.models import ComplianceTask
-        today = timezone.now().date()
-        
-        # Filter for PENDING/IN_PROGRESS tasks linked to this specific fund
-        upcoming_tasks = ComplianceTask.objects.filter(
-            fund=fund,
-            status__in=['PENDING', 'IN_PROGRESS']
-        ).order_by('due_date')[:3]
-
-        # Calculate "Days Remaining" or "Days Overdue" for the UI sidebar
-        for task in upcoming_tasks:
-            diff = (task.due_date - today).days
-            task.days_left = diff
-            # If diff is -2, it means 2 days overdue
-            task.days_overdue = abs(diff) if diff < 0 else 0
-            
-    except (ImportError, Exception) as e:
-        # Fallback if the compliance app isn't migrated or available
-        print(f"Compliance fetch error: {e}")
-        upcoming_tasks = []
-
-    # 4. COMPLIANCE ALERTS (Business Logic)
-    alerts = []
-    # Example: IFSC Funds MUST have stewardship logs per 2024/25 regulations
-    if fund.jurisdiction == 'IFSC' and not fund.stewardship_logs.exists():
-        alerts.append({
-            'level': 'warning', 
-            'message': 'IFSCA Compliance: No Stewardship engagements logged for this fund.'
-        })
+    # 1. Financial Totals (Calling the @property methods from your Fund model)
+    total_committed = fund.total_committed
+    total_called = fund.total_called
+    total_invested = fund.total_invested_capital
     
-    # Example: Low Commitment Alert
-    if summary.get('commitment_percentage', 0) < 10:
-        alerts.append({
-            'level': 'info',
-            'message': 'Fundraising: Commitment levels are currently below 10% of target corpus.'
-        })
+    # 2. Progress Percentages for the UI progress bars
+    fundraising_percent = fund.raised_percentage
+    drawdown_percent = fund.drawdown_percentage
 
-    # 5. CONTEXT PREPARATION
+    # 3. Cap Table Logic
+    # Using the correct related_name 'cap_table' as defined in your model
+    # We use select_related to get investor names in one go for better performance
+    investor_positions = fund.cap_table.all().select_related('investor')
+    
+    # Calculate total units issued across all investors for ownership math
+    total_fund_units = investor_positions.aggregate(s=Sum('total_units'))['s'] or 0
+
+    # 4. Portfolio Stats
+    # Get distinct count of companies invested in via the PurchaseTransaction model
+    active_portfolio_count = PurchaseTransaction.objects.filter(fund=fund).values('investee_company').distinct().count()
+
     context = {
-        "fund": fund,
-        "cap_table": cap_table,
-        "total_fund_units": total_fund_units,
-        "summary": summary,
-        "compliance_alerts": alerts,
-        "upcoming_tasks": upcoming_tasks
+        'fund': fund,
+        'total_committed': total_committed,
+        'total_called': total_called,
+        'total_invested': total_invested,
+        'fundraising_percent': fundraising_percent,
+        'drawdown_percent': drawdown_percent,
+        'cap_table': investor_positions, # Passed to the {% for position in cap_table %} loop
+        'total_fund_units': total_fund_units,
+        'total_lp_count': fund.commitments.count(),
+        'active_portfolio_count': active_portfolio_count,
     }
-
-    return render(request, "funds/fund_detail.html", context)
+    return render(request, 'funds/fund_detail.html', context)
 
 # =========================================================
 #  PORTFOLIO & REPORTING

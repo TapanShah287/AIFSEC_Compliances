@@ -152,22 +152,16 @@
 
                 <p class="px-4 pb-2 pt-6 text-[10px] font-bold text-slate-400 uppercase tracking-widest">Compliance & Reports</p>
                 
-                <a href="{% url 'compliances:task-list' %}" 
-                class="sidebar-link {% if 'compliances' in request.resolver_match.app_name %}sidebar-link-active{% else %}sidebar-link-inactive{% endif %}">
-                    <i data-lucide="calendar-check" class="w-5 h-5 shrink-0"></i> 
-                    <span>Compliance Tasks</span>
+                <a href="{% url 'compliances:reports' %}" 
+                class="flex items-center gap-3 px-4 py-3 rounded-xl transition-all {% if request.resolver_match.view_name == 'compliances:reports' %}bg-indigo-600 text-white shadow-lg shadow-indigo-200{% else %}text-slate-500 hover:bg-slate-50 hover:text-slate-900{% endif %}">
+                    <i data-lucide="file-bar-chart" class="w-5 h-5"></i>
+                    <span>Regulatory Reports</span>
                 </a>
 
                 <a href="{% url 'docgen:hub' %}" 
                 class="sidebar-link {% if 'docgen' in request.resolver_match.app_name %}sidebar-link-active{% else %}sidebar-link-inactive{% endif %}">
                     <i data-lucide="printer" class="w-5 h-5 shrink-0"></i> 
                     <span>Document Hub</span>
-                </a>
-
-                <a href="{% url 'compliances:reports' %}" 
-                class="flex items-center gap-3 px-4 py-3 rounded-xl transition-all {% if request.resolver_match.view_name == 'compliances:reports' %}bg-indigo-600 text-white shadow-lg shadow-indigo-200{% else %}text-slate-500 hover:bg-slate-50 hover:text-slate-900{% endif %}">
-                    <i data-lucide="file-bar-chart" class="w-5 h-5"></i>
-                    <span class="text-sm font-bold">Regulatory Reports</span>
                 </a>
                 
                 {% if user_role == 'ADMIN' %}

@@ -2,8 +2,9 @@ from django.shortcuts import render
 from django.contrib.auth.decorators import login_required
 from django.db.models import Sum, F, ExpressionWrapper, DecimalField
 from decimal import Decimal
+from django.utils import timezone
 
-# App Model Imports
+# Model Imports
 from funds.models import Fund
 from investors.models import Investor
 from investee_companies.models import InvesteeCompany
@@ -17,17 +18,12 @@ from compliances.models import ComplianceTask
 
 @login_required
 def dashboard_view(request):
-    """
-    Main System Overview Dashboard.
-    Aggregates operational counts and global financial metrics across all funds.
-    Supports dynamic scaling for Crores (10^7) or Millions (10^6).
-    """
     # 1. Operational Counts
     fund_count = Fund.objects.count()
     investor_count = Investor.objects.count()
     company_count = InvesteeCompany.objects.count()
 
-    # 2. Global Financial Aggregations (Raw Data)
+    # 2. Global Financial Aggregations
     total_drawdowns = DrawdownReceipt.objects.aggregate(s=Sum('amount_received'))['s'] or 0
     total_investments = PurchaseTransaction.objects.aggregate(
         total=Sum(ExpressionWrapper(F('quantity') * F('price_per_share'), output_field=DecimalField()))
@@ -39,27 +35,32 @@ def dashboard_view(request):
 
     cash_available = (total_drawdowns + total_redemptions) - (total_investments + total_distributions)
 
-    # 3. Denomination / Scaling Logic
-    denom = request.GET.get('denom', 'cr') # Default to Crores for Indian AIF context
-    
+    # 3. Denomination Scaling Logic
+    denom = request.GET.get('denom', 'cr')
     if denom == 'm':
-        divisor = Decimal('1000000')
-        suffix = "M"
+        divisor, suffix = Decimal('1000000'), "M"
     elif denom == 'raw':
-        divisor = Decimal('1')
-        suffix = ""
+        divisor, suffix = Decimal('1'), ""
     else:
-        divisor = Decimal('10000000') # 1 Crore = 10^7
-        suffix = "Cr"
+        divisor, suffix = Decimal('10000000'), "Cr"
 
     def scale(value):
-        """Helper to divide by denomination and format to 2 decimals."""
         try:
             return (Decimal(value) / divisor).quantize(Decimal('0.01'))
         except:
             return Decimal('0.00')
 
-    # 4. Compliance Stats
+    # 4. Activity & Compliance Feeds (NEW: Required by your HTML)
+    # Feed 1: Recent Cash Inflow
+    recent_activities = DrawdownReceipt.objects.select_related('investor', 'fund').order_by('-date_received')[:5]
+
+    # Feed 2: Upcoming Deadlines
+    upcoming_filings = ComplianceTask.objects.filter(
+        status__in=['PENDING', 'IN_PROGRESS'],
+        due_date__gte=timezone.now().date()
+    ).select_related('fund').order_by('due_date')[:4]
+
+    # Feed 3: Overdue Count
     overdue_count = ComplianceTask.objects.filter(status='OVERDUE').count()
 
     context = {
@@ -67,6 +68,8 @@ def dashboard_view(request):
         "investor_count": investor_count,
         "company_count": company_count,
         "overdue_count": overdue_count,
+        "recent_activities": recent_activities,    # Added for Activity section
+        "upcoming_filings": upcoming_filings,      # Added for Compliance Watch
         "denom": denom,
         "suffix": suffix,
         "stats": {

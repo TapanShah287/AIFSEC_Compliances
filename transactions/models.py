@@ -38,7 +38,15 @@ class CapitalCall(models.Model):
     reference = models.CharField(max_length=50, unique=True)
     is_paid = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
+    due_date = models.DateField(help_text="Payment due date")
+    is_fully_paid = models.BooleanField(default=False)
 
+    @property
+    def days_overdue(self):
+        if not self.is_fully_paid and self.due_date < timezone.now().date():
+            return (timezone.now().date() - self.due_date).days
+        return 0
+    
     def __str__(self):
         return f"{self.reference} - {self.investor.name}"
 
@@ -53,7 +61,7 @@ class DrawdownReceipt(models.Model):
     date_received = models.DateField()  # The form looks for 'date_received'
     
     # Meta Data (The fields that caused the error)
-    transaction_reference = models.CharField(max_length=100, blank=True, null=True, help_text="UTR or Bank Ref Number")
+    transaction_reference = models.CharField(max_length=100, help_text="UTR / Cheque Number")
     remarks = models.TextField(blank=True, null=True)
     
     created_at = models.DateTimeField(auto_now_add=True)
@@ -84,6 +92,7 @@ class PurchaseTransaction(models.Model):
     transaction_date = models.DateField(default=timezone.now)
     quantity = models.DecimalField(max_digits=14, decimal_places=2)
     price_per_share = models.DecimalField(max_digits=14, decimal_places=2)
+    transaction_costs = models.DecimalField(max_digits=14, decimal_places=2, default=0, help_text="Brokerage, Taxes, etc.")
     currency = models.ForeignKey('currencies.Currency', on_delete=models.SET_NULL, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
@@ -118,4 +127,9 @@ class Distribution(models.Model):
     gross_amount = models.DecimalField(max_digits=14, decimal_places=2)
     distribution_type = models.CharField(max_length=20, choices=DIST_TYPES, default='PRINCIPAL')
     remarks = models.TextField(blank=True)
+    tds_deducted = models.DecimalField(max_digits=14, decimal_places=2, default=0)
     created_at = models.DateTimeField(auto_now_add=True)
+
+    @property
+    def net_amount(self):
+        return self.gross_amount - self.tds_deducted

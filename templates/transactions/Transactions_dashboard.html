@@ -1,0 +1,89 @@
+{% extends 'base.html' %}
+{% load humanize %}
+
+{% block title %}Operations Dashboard | AIF Portal{% endblock %}
+
+{% block content %}
+<div class="mb-8 flex flex-col md:flex-row md:items-center justify-between gap-4">
+    <div>
+        <h1 class="text-2xl font-black text-slate-900 tracking-tight">Fund Operations</h1>
+        <p class="text-slate-500 text-sm font-medium">Manage Capital Calls, Receipts, and Unit Issuance.</p>
+    </div>
+    <div class="flex gap-3">
+        <a href="{% url 'add-call' %}" class="bg-indigo-600 text-white px-4 py-2 rounded-xl text-sm font-bold flex items-center gap-2 shadow-lg shadow-indigo-100 hover:bg-indigo-700 transition-all">
+            <i data-lucide="megaphone" class="w-4 h-4"></i> New Capital Call
+        </a>
+        <a href="{% url 'add-receipt' %}" class="bg-white border border-slate-300 text-slate-700 px-4 py-2 rounded-xl text-sm font-bold flex items-center gap-2 hover:bg-slate-50 transition-all">
+            <i data-lucide="download" class="w-4 h-4"></i> Record Receipt
+        </a>
+    </div>
+</div>
+
+<div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+    <div class="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm">
+        <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Total Committed</p>
+        <h3 class="text-2xl font-black text-slate-900">₹ {{ total_committed|intcomma }}</h3>
+    </div>
+    <div class="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm">
+        <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Total Drawn Down</p>
+        <h3 class="text-2xl font-black text-indigo-600">₹ {{ total_drawn|intcomma }}</h3>
+        <div class="w-full bg-slate-100 h-1.5 rounded-full mt-3 overflow-hidden">
+            <div class="bg-indigo-500 h-full" style="width: {{ percent_drawn }}%"></div>
+        </div>
+    </div>
+    <div class="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm border-l-4 border-l-rose-500">
+        <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Outstanding Dues</p>
+        <h3 class="text-2xl font-black text-slate-900">₹ {{ outstanding_amount|default:"0"|intcomma }}</h3>
+        <p class="text-[10px] text-rose-500 font-bold mt-2 uppercase">Pending Collection</p>
+    </div>
+</div>
+
+<div class="bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden mb-8">
+    <div class="px-6 py-5 border-b border-slate-100 bg-slate-50/50">
+        <h3 class="font-bold text-slate-900 text-sm flex items-center gap-2">
+            <i data-lucide="clock" class="w-4 h-4 text-slate-400"></i> Pending Capital Calls
+        </h3>
+    </div>
+    <table class="w-full text-left">
+        <thead class="bg-slate-50 text-[10px] uppercase font-black text-slate-400 tracking-wider">
+            <tr>
+                <th class="px-6 py-3">Investor</th>
+                <th class="px-6 py-3">Fund Scheme</th>
+                <th class="px-6 py-3">Due Date</th>
+                <th class="px-6 py-3">Amount Due</th>
+                <th class="px-6 py-3 text-right">Action</th>
+            </tr>
+        </thead>
+        <tbody class="divide-y divide-slate-100 text-sm">
+            {% for call in outstanding_calls %}
+            <tr class="hover:bg-slate-50 transition-colors group">
+                <td class="px-6 py-4 font-bold text-slate-800">{{ call.investor.name }}</td>
+                <td class="px-6 py-4 text-slate-500 text-xs">{{ call.fund.name }}</td>
+                <td class="px-6 py-4">
+                    <div class="flex items-center gap-2">
+                        <span class="text-xs font-medium text-slate-600">{{ call.due_date|date:"d M Y" }}</span>
+                        {% if call.days_overdue > 0 %}
+                        <span class="px-2 py-0.5 rounded bg-rose-100 text-rose-700 text-[10px] font-black uppercase">
+                            {{ call.days_overdue }} Days Late
+                        </span>
+                        {% endif %}
+                    </div>
+                </td>
+                <td class="px-6 py-4 font-mono font-bold text-slate-900">₹ {{ call.amount_called|intcomma }}</td>
+                <td class="px-6 py-4 text-right">
+                    <a href="{% url 'add-receipt' %}?call={{ call.id }}" class="text-[10px] font-bold bg-indigo-50 text-indigo-700 px-3 py-1.5 rounded-lg hover:bg-indigo-100 transition-all uppercase">
+                        Record Pay
+                    </a>
+                </td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="5" class="px-6 py-8 text-center text-slate-400 text-xs italic">
+                    No outstanding capital calls. All clean!
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

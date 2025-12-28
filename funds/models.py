@@ -2,6 +2,7 @@ from django.db import models
 from django.utils import timezone
 from django.conf import settings
 from decimal import Decimal
+from django.db.models import Sum, F
 from django.core.validators import MinValueValidator
 from manager_entities.models import ManagerEntity
 
@@ -90,11 +91,32 @@ class Fund(models.Model):
         return f"{self.name} ({self.get_category_display()})"
 
     @property
-    def total_commitments(self):
-        """Aggregate total committed capital from investors."""
-        # This requires the 'transactions' app to be loaded
-        return self.commitments.aggregate(total=models.Sum('amount_committed'))['total'] or Decimal('0.00')
+    def total_committed(self):
+        return self.commitments.aggregate(s=Sum('amount_committed'))['s'] or 0
 
+    @property
+    def total_called(self):
+        # Requires import from transactions.models inside the method to avoid circular import
+        from transactions.models import CapitalCall
+        return CapitalCall.objects.filter(fund=self).aggregate(s=Sum('amount_called'))['s'] or 0
+
+    @property
+    def total_invested_capital(self):
+        from transactions.models import PurchaseTransaction
+        return PurchaseTransaction.objects.filter(fund=self).aggregate(s=Sum(F('quantity') * F('price_per_share')))['s'] or 0
+
+    @property
+    def raised_percentage(self):
+        if self.corpus > 0:
+            return (self.total_committed / self.corpus) * 100
+        return 0
+
+    @property
+    def drawdown_percentage(self):
+        committed = self.total_committed
+        if committed > 0:
+            return (self.total_called / committed) * 100
+        return 0
 
 class NavSnapshot(models.Model):
     """

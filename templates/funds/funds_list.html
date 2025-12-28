@@ -48,26 +48,26 @@
             <div class="space-y-5">
                 <div>
                     <div class="flex justify-between text-xs mb-2">
-                        <span class="text-slate-500 font-medium">Target Corpus</span>
-                        <span class="text-slate-900 font-bold">{{ fund.currency.symbol }} {{ fund.corpus|intword }}</span>
+                        <span class="text-slate-500 font-medium">Raised / Target</span>
+                        <span class="text-slate-900 font-bold">{{ fund.currency.symbol }} {{ fund.total_committed|intword }} / {{ fund.corpus|intword }}</span>
                     </div>
                     <div class="w-full bg-slate-100 rounded-full h-2 overflow-hidden">
-                        <div class="bg-indigo-500 h-2 rounded-full" style="width: 65%"></div>
+                        <div class="bg-indigo-500 h-2 rounded-full" style="width: {{ fund.raised_percentage }}%"></div>
                     </div>
                     <div class="flex justify-between text-[10px] mt-1.5 text-slate-400">
-                        <span>Raised: 65%</span>
-                        <span>Remaining: 35%</span>
+                        <span>Fundraising: {{ fund.raised_percentage|floatformat:1 }}%</span>
+                        <span>{{ fund.commitments.count }} Investors</span>
                     </div>
                 </div>
 
                 <div class="grid grid-cols-2 gap-4 pt-2">
                     <div class="bg-slate-50 p-3 rounded-xl border border-slate-100">
-                        <p class="text-[10px] text-slate-400 uppercase font-bold tracking-wider">NAV</p>
-                        <p class="text-sm font-bold text-slate-800 mt-0.5">104.25</p>
+                        <p class="text-[10px] text-slate-400 uppercase font-bold tracking-wider">Invested</p>
+                        <p class="text-sm font-bold text-slate-800 mt-0.5">₹ {{ fund.total_invested_capital|intword }}</p>
                     </div>
                     <div class="bg-slate-50 p-3 rounded-xl border border-slate-100">
-                        <p class="text-[10px] text-slate-400 uppercase font-bold tracking-wider">Vintage</p>
-                        <p class="text-sm font-bold text-slate-800 mt-0.5">{{ fund.date_of_inception|date:"Y" }}</p>
+                        <p class="text-[10px] text-slate-400 uppercase font-bold tracking-wider">Drawdown</p>
+                        <p class="text-sm font-bold text-indigo-600 mt-0.5">{{ fund.drawdown_percentage|floatformat:1 }}%</p>
                     </div>
                 </div>
             </div>

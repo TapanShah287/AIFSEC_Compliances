@@ -13,7 +13,8 @@
     <div class="flex items-center gap-4">
 
 
-        <a href="{% url 'compliances:task-create' %}" class="bg-indigo-600 hover:bg-indigo-700 text-white px-5 py-2.5 rounded-xl font-medium text-sm shadow-lg shadow-indigo-200 flex items-center gap-2 transition-all">
+        <a href="{% url 'compliances:task-create' %}{% if fund_id %}?fund={{ fund_id }}{% endif %}" 
+        class="bg-indigo-600 hover:bg-indigo-700 text-white px-5 py-2.5 rounded-xl font-medium text-sm shadow-lg shadow-indigo-200 flex items-center gap-2 transition-all">
             <i data-lucide="plus" class="w-4 h-4"></i> Create Manual Task
         </a>
         <div class="flex bg-white p-1 rounded-xl border border-slate-200 shadow-sm w-fit">

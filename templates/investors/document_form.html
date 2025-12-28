@@ -1,0 +1,49 @@
+{% extends 'base.html' %}
+
+{% block title %}Upload KYC | {{ investor.name }}{% endblock %}
+
+{% block content %}
+<div class="max-w-md mx-auto mt-10">
+    <div class="bg-white p-8 rounded-3xl border border-slate-200 shadow-xl">
+        <div class="mb-6 text-center">
+            <div class="w-12 h-12 bg-emerald-50 text-emerald-600 rounded-full flex items-center justify-center mx-auto mb-3">
+                <i data-lucide="file-up" class="w-6 h-6"></i>
+            </div>
+            <h2 class="text-xl font-black text-slate-900">Upload KYC Document</h2>
+            <p class="text-sm text-slate-500 mt-1">Attaching to profile: <strong>{{ investor.name }}</strong></p>
+        </div>
+
+        <form method="post" enctype="multipart/form-data" class="space-y-5">
+            {% csrf_token %}
+            
+            <div>
+                <label class="block text-xs font-bold text-slate-500 uppercase mb-1.5">Document Type</label>
+                {{ form.doc_type }}
+                <p class="text-[10px] text-slate-400 mt-1">Select the official document category.</p>
+            </div>
+
+            <div>
+                <label class="block text-xs font-bold text-slate-500 uppercase mb-1.5">Select File</label>
+                {{ form.file }}
+                <p class="text-[10px] text-slate-400 mt-1">Supports PDF, JPG, PNG (Max 5MB)</p>
+            </div>
+
+            <div class="p-3 bg-amber-50 border border-amber-100 rounded-xl flex gap-2">
+                <i data-lucide="alert-triangle" class="w-4 h-4 text-amber-500 flex-shrink-0 mt-0.5"></i>
+                <p class="text-[10px] text-amber-700 font-medium">
+                    Ensure the document is clear and readable. Blurred documents will lead to KYC rejection.
+                </p>
+            </div>
+
+            <div class="flex gap-3 pt-2">
+                <a href="{% url 'investors:portal-detail' investor.pk %}" class="flex-1 py-3 text-center text-slate-600 font-bold hover:bg-slate-50 rounded-xl transition-all text-sm">
+                    Cancel
+                </a>
+                <button type="submit" class="flex-1 py-3 bg-indigo-600 text-white font-bold rounded-xl hover:bg-indigo-700 shadow-lg shadow-indigo-200 transition-all text-sm">
+                    Upload File
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

@@ -8,7 +8,7 @@ STYLE = {'class': 'w-full p-2 border border-gray-300 rounded'}
 class ComplianceTaskForm(forms.ModelForm):
     class Meta:
         model = ComplianceTask
-        fields = ['fund', 'title', 'topic', 'jurisdiction', 'due_date', 'priority', 'status','description', 'assigned_to']
+        fields = ['fund', 'title', 'topic', 'jurisdiction', 'due_date', 'priority', 'status', 'description', 'assigned_to']
         
         widgets = {
             'fund': forms.Select(attrs={
