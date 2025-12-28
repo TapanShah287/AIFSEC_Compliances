@@ -98,19 +98,26 @@ def settings_hub(request):
     # 1. Get the active entity ID from the session
     active_id = request.session.get('active_entity_id')
     
-    # 2. Check if the user has an ADMIN role for this active entity
-    is_admin = EntityMembership.objects.filter(
+    # 2. Authorization Logic
+    # First, check if they are a Global Admin (Django Superuser or Staff)
+    is_global_admin = request.user.is_staff or request.user.is_superuser
+    
+    # Second, check if they are specifically an ADMIN for this entity
+    is_entity_admin = EntityMembership.objects.filter(
         user=request.user, 
         entity_id=active_id, 
         role='ADMIN'
     ).exists()
     
-    # 3. Security enforcement
-    if not is_admin:
+    # 3. Security enforcement: Allow access if EITHER condition is true
+    if not (is_global_admin or is_entity_admin):
         messages.error(request, "Access Denied. You need Administrative privileges for this entity.")
         return redirect('manager_entities:manager_list')
         
-    return render(request, "manager_entities/settings_hub.html")
+    return render(request, "manager_entities/settings_hub.html", {
+        # Pass this flag to the template if you want to show/hide specific "Super Admin" features
+        'is_global_admin': is_global_admin 
+    })
     
 # --- Team Management Views ---
 
